@@ -62,7 +62,8 @@ export { linearScale, niceStep, niceTicks, logTicks } from './scales.js';
  * @property {boolean} [controls]        show the scale selects in the chart toolbar (default true)
  * @property {(groups: string[]) => void} [onVisibilityChange] request a full-data worker recomputation
  * @property {{x: [number,number], y: [number,number]}} [view]
- * @property {string} [maxWidth] * @property {number} [legendPage]
+ * @property {string} [maxWidth]
+ * @property {number} [legendPage]
  * @property {string} [legendQuery]
  *
  * @typedef {Object} ChartHandle
@@ -604,10 +605,9 @@ export function drawScatter(container, input, options = {}) {
     meanCache = null;
     if (selects[axis]) selects[axis].value = kind;
     placeMarks();
-    // The old view is in the other scale's units, and zoom always scales both
-    // axes together, so resetting only this axis would leave the other zoomed.
+    // The old view is in the other scale's units; start this axis over.
     home = { x: homeX(), y: homeY() };
-    view = { x: home.x, y: home.y };
+    view = { ...view, [axis]: home[axis] };
     hideTooltip();
     render();
     reportHidden();
@@ -629,13 +629,11 @@ export function drawScatter(container, input, options = {}) {
     btn.addEventListener('click', () => {
       if (hidden.has(group)) hidden.delete(group); else hidden.add(group);
       btn.setAttribute('aria-pressed', String(!hidden.has(group)));
-      if (highlighted === group && hidden.has(group)) highlighted = null;
       hideTooltip(); fitCache.clear(); meanCache = null; dataVersion++;
       if (options.onVisibilityChange) options.onVisibilityChange([...hidden]);
       else { render(); reportHidden(); }
     });
-    // A hidden group has nothing to highlight; highlighting it would dim every visible group.
-    const on = () => { if (hidden.has(group)) return; highlighted = group; renderer.setHighlight(group); };
+    const on = () => { highlighted = group; renderer.setHighlight(group); };
     const off = () => { highlighted = null; renderer.setHighlight(null); };
     btn.addEventListener('mouseenter', on); btn.addEventListener('focus', on);
     btn.addEventListener('mouseleave', off); btn.addEventListener('blur', off);

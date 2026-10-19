@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPlotData } from '../src/data.js';
 import { createModel, generatedPair, extent, LIMITS } from '../src/model.js';
-import { exportFileName } from '../src/export-name.js';
 import Papa from '../src/vendor/papa.js';
 const model = (a, b) => createModel(buildPlotData(a), buildPlotData(b));
 
@@ -26,7 +25,7 @@ test('pagination is capped; sorting is global before slicing; export table inclu
   assert.equal(m.page({ mode:'detail', size:100 }).rows.length,100);
   assert.equal(m.page({ mode:'detail', page:139 }).rows.length,50);
   assert.equal(m.table({ mode:'detail' }).rows.length,7000);
-  const sorted = m.table({ mode:'detail', sortBy:'value' }).rows;
+  const sorted = m.table({ mode:'detail', sort:'value' }).rows;
   assert.ok(sorted.every((r,i)=>i===0||sorted[i-1][2]<=r[2]));
   assert.equal(m.view().fit.r,v.fit.r);
 });
@@ -97,70 +96,4 @@ test('large-data overview recomputes means after exclusions without losing legen
   assert.equal(input.groupNames.length, 1000);
   assert.equal(input.meanPoints[0].n, 999);
   assert.equal(m.page({mode:'group',excludedGroups:['Person 00001']}).total, 999);
-});
-
-test('the scatter carries a model-computed fit only when its points are a drawing sample', () => {
-  const small = createModel(...generatedPair(50).map(t => buildPlotData(t))).view().charts[2];
-  assert.ok(small.points.length === small.total);
-  assert.equal(small.statsOverride, undefined, 'unsampled charts must let the chart (and setStatsProvider) compute stats');
-  const large = createModel(...generatedPair(1000).map(t => buildPlotData(t))).view().charts[2];
-  assert.ok(large.points.length < large.total);
-  assert.equal(large.statsOverride.n, large.total, 'sampled charts keep the full-data fit');
-});
-
-test('matched pairs keep original category order within each group (M1)', () => {
-  const m = createModel(...generatedPair(3).map(t => buildPlotData(t)));
-  const rows = m.table({ source: 2, mode: 'detail', sortBy: 'group' }).rows;
-  const first = rows.filter(r => r[0] === rows[0][0]).map(r => r[1]);
-  assert.deepEqual(first, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-});
-
-test('sorting takes a column and a direction, including summary statistics (Y3)', () => {
-  const m = createModel(...generatedPair(30).map(t => buildPlotData(t)));
-  const col = (rows, i) => rows.map(r => r[i]);
-  const ascending = values => values.every((v, i) => i === 0 || values[i - 1] <= v);
-  const descending = values => values.every((v, i) => i === 0 || values[i - 1] >= v);
-  assert.ok(descending(col(m.table({ mode: 'detail', sortBy: 'value', direction: 'desc' }).rows, 2)));
-  const groupsDesc = col(m.table({ mode: 'detail', sortBy: 'group', direction: 'desc' }).rows, 0);
-  assert.ok(groupsDesc.every((g, i) => i === 0 || groupsDesc[i - 1].localeCompare(g) >= 0));
-  const summary = m.table({ mode: 'group', sortBy: 'median' });
-  const median = summary.columns.indexOf('Median'), sd = summary.columns.indexOf('Sample SD');
-  assert.ok(ascending(col(summary.rows, median)));
-  assert.ok(descending(col(m.table({ mode: 'group', sortBy: 'sd', direction: 'desc' }).rows, sd)));
-  const byCategory = col(m.table({ mode: 'category', sortBy: 'group' }).rows, 0);
-  assert.deepEqual(byCategory, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 'default order follows the original categories');
-});
-
-test('tables report one decimal count per column from the data precision, capped at 3 (Y4)', () => {
-  const m = createModel(...generatedPair(30).map(t => buildPlotData(t)));   // steps: integers; sleep: 3 decimals
-  const steps = m.table({ source: 0, mode: 'group' });
-  assert.deepEqual(steps.decimals, [null, 0, 1, 1, 1, 0, 0]);
-  assert.deepEqual(m.table({ source: 1, mode: 'group' }).decimals, [null, 0, 3, 3, 3, 3, 3]);
-  assert.deepEqual(m.table({ source: 2, mode: 'detail' }).decimals, [null, null, 3, 0]);
-  assert.deepEqual(m.view().precision, [0, 3]);
-});
-
-test('export file names name both datasets, the view and a data fingerprint (M3)', () => {
-  const view = createModel(...generatedPair(5).map(t => buildPlotData(t))).view();
-  const name = exportFileName(view, { source: 2, mode: 'detail' }, 35);
-  assert.match(name, /^daily-steps_vs_sleep-hours__pairs-obs__35r__[0-9a-f]{6}\.csv$/);
-  assert.match(exportFileName(view, { source: 0, mode: 'group', query: 'per' }, 3), /__f1-bygrp-flt__3r__/);
-  assert.match(exportFileName(view, { source: 1, mode: 'category', excludedGroups: ['Person 00001'] }, 7), /__f2-bycat-flt__7r__/);
-  const same = createModel(...generatedPair(5).map(t => buildPlotData(t))).view();
-  const changed = createModel(...generatedPair(6).map(t => buildPlotData(t))).view();
-  assert.equal(same.fingerprint, view.fingerprint, 'identical data gives the same id');
-  assert.notEqual(changed.fingerprint, view.fingerprint, 'a different version of the pair gives a different id');
-  assert.match(exportFileName({ labels: ['  ', 'Été / 2026 (v2)'], fingerprint: 'abcdef' }, { source: 0, mode: 'detail' }, 1), /^data_vs_ete-2026-v2__f1-obs__1r__abcdef\.csv$/);
-});
-
-test('matched pairs sort by either value column, in both directions (Y3 follow-up)', () => {
-  const m = createModel(...generatedPair(20).map(t => buildPlotData(t)));
-  const table = m.table({ source: 2, mode: 'detail' });
-  assert.deepEqual(table.columns.slice(2), ['Sleep (hours)', 'Daily steps'], 'pairs show the second file, then the first');
-  const col = (opts, i) => m.table({ source: 2, mode: 'detail', ...opts }).rows.map(r => r[i]);
-  const ascending = v => v.every((x, i) => i === 0 || v[i - 1] <= x), descending = v => v.every((x, i) => i === 0 || v[i - 1] >= x);
-  assert.ok(ascending(col({ sortBy: 'second' }, 2)), 'second file value ascending');
-  assert.ok(descending(col({ sortBy: 'second', direction: 'desc' }, 2)), 'second file value descending');
-  assert.ok(ascending(col({ sortBy: 'value' }, 3)), 'first file value ascending');
-  assert.ok(ascending(col({ source: 0, sortBy: 'second' }, 2)), 'single-file sources fall back to their value');
 });

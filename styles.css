@@ -375,32 +375,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .table-footer { font-size: .78rem; color: var(--text-secondary); }
 .pager { display: flex; align-items: center; gap: 12px; }
 .chart-expanded .chart-image-actions, .scatter:fullscreen .chart-image-actions { padding-bottom: 8px; }
-@media(max-width: 760px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } main { padding: 20px 12px; } }
+@media(max-width: 760px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } main { padding: 20px 12px; } .scatter-toolbar { justify-content: flex-start; } }
 
 .chart-settings, .chart-settings-note { max-width: 960px; margin-left: auto; margin-right: auto; }
-
-/* "Width for all charts" sits at the right end of the pinned bar; each chart keeps its own
-   "Maximum width" to override it (Y6). Both are hidden on narrow screens, where there is no room
-   and every option already means "fill the screen". */
-.chart-settings .plot-width { margin-left: auto; }
-@media (max-width: 600px) { .chart-width { display: none; } }
-
-/* Chart toolbar: hint on the left, controls packed to the right, so a wrapped row keeps
-   Reset view and Fullscreen together at the right edge instead of stranding Fullscreen (6a).
-   Empty status messages take no slot until they have something to say. */
-.scatter-toolbar { justify-content: flex-end; }
-.scatter-toolbar .scatter-hint { margin-right: auto; }
-.chart-layout-status:empty, .chart-image-status:empty { display: none; }
-/* "Show data table" shares the image-actions row, pinned to its left end (6b). */
-.chart-image-actions .chart-table-link { margin: 0 auto 0 0; }
-.chart-image-buttons { display: inline-flex; gap: 8px; }
-
-/* Y5: on wide screens the filter row (search, line display, means/fit) stays pinned at the top,
-   with the Canvas/SVG bar pinned directly below it. Its height is fixed so the bar knows where to
-   stop; at >= 1024px its controls always fit on one line. Narrow screens keep it unpinned. */
-@media (min-width: 1024px) {
-  :root { --filters-h: 5.625rem; }
-  #charts > .settings { position: sticky; top: 0; z-index: 3; box-sizing: border-box; height: var(--filters-h); flex-wrap: nowrap; }
-  #charts > .chart-settings { top: var(--filters-h); }
-  html:has(#charts:not([hidden])) { scroll-padding-top: calc(var(--filters-h) + var(--settings-h) + 8px); }
-}

@@ -35,7 +35,6 @@
         <button type="button" id="renderer-canvas" data-renderer="canvas" aria-pressed="true">Canvas</button>
         <button type="button" id="renderer-svg" data-renderer="svg" aria-pressed="false">SVG</button>
       </div>
-      <label class="chart-width plot-width">Width for all charts <select id="plot-width"><option value="mixed" disabled hidden>Mixed (set per chart)</option><option value="">Fit available width</option><option value="640">640 px</option><option value="800">800 px</option><option value="960" selected>960 px</option><option value="1200">1200 px</option></select></label>
     </div>
     <p class="chart-settings-note">Same charts, drawn two ways: Canvas paints pixels, SVG builds shapes you can inspect.</p>
     <section id="chart-a" class="card"></section><p id="line-a-note" class="scope-note"></p>
@@ -47,13 +46,12 @@
       <div id="source-tabs" class="tabs" role="group" aria-label="Table dataset"><button data-source="0" aria-pressed="true">First file</button><button data-source="1" aria-pressed="false">Second file</button><button data-source="2" aria-pressed="false">Matched pairs</button></div>
       <div class="table-tools">
         <label class="control">Display<select id="table-mode"><option value="detail">All observations</option><option value="category">Summary by category</option><option value="group">Summary by group</option></select></label>
-        <label class="control">Sort by<select id="table-sort"><option value="group">Group / original category order</option><option value="category">Category name</option><option value="second" data-pairs>Second file value</option><option value="value">Value / mean</option><option value="median" data-summary>Median</option><option value="sd" data-summary>Sample SD</option><option value="min" data-summary>Min</option><option value="max" data-summary>Max</option></select></label>
-        <label class="control">Order<select id="table-direction"><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
+        <label class="control">Sort<select id="table-sort"><option value="group">Group / original category order</option><option value="category">Category name</option><option value="value">Value / mean (low to high)</option><option value="value-desc">Value / mean (high to low)</option></select></label>
         <label class="control">Rows per page<select id="page-size"><option>25</option><option selected>50</option><option>100</option></select></label><span id="table-count"></span>
       </div>
       <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable results"><table id="data-table"><caption class="visually-hidden">Filtered results. Pagination changes the displayed rows only.</caption><thead></thead><tbody></tbody></table><p id="table-empty" hidden>No matching observations. Restore hidden groups or change the group filter.</p></div>
       <div class="table-footer"><p id="table-note"></p><nav class="pager" aria-label="Table pagination"><button id="prev" type="button">Previous</button><span id="page-label"></span><button id="next" type="button">Next</button></nav></div>
-      <p class="export-note">The table and CSV follow the selected chart's hidden groups and the group filter. Export CSV saves all matching rows across every page, not only the rows shown here. Choose All observations for cleaned values; summary exports contain statistics. Paired summaries describe the first file (Y).</p>
+      <p class="export-note">The table and CSV follow the selected chart's hidden groups and the group filter. CSV includes every page of the selected display. Choose All observations for cleaned values; summary exports contain statistics. Paired summaries describe the first file (Y).</p>
     </details>
   </div>
 </main>

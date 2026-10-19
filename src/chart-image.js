@@ -110,8 +110,6 @@ export function addImageActions(container) {
     } catch (error) { message(`Could not save the image: ${error.message}`); }
     finally { save.disabled = false; }
   };
-  // Grouped so the two image buttons wrap together on narrow screens instead of splitting.
-  const buttons = document.createElement('span'); buttons.className = 'chart-image-buttons'; buttons.append(copy, save);
-  actions.append(status, buttons); container.append(actions);
+  actions.append(status, copy, save); container.append(actions);
   return () => { clearTimeout(messageTimer); actions.remove(); };
 }

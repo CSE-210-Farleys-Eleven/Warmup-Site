@@ -5,7 +5,6 @@ import { createRequire } from 'node:module';
 import { buildPlotData } from '../src/data.js';
 import { createModel, generatedPair } from '../src/model.js';
 import { drawScatter } from '../src/chart.js';
-import { setStatsProvider } from '../src/stats.js';
 import { chartPng } from '../src/chart-image.js';
 
 // DOM contract tests, not a substitute for browser layout, native fullscreen,
@@ -68,44 +67,6 @@ test('chart controls retain zoom, width and fullscreen while groups are restored
   const before = paints; [...themeListeners][0](); assert.ok(paints > before);
   handle.destroy(); root.remove();
   assert.equal(observers.size,0); assert.equal(themeListeners.size,0);
-});
-
-test('switching an axis scale while zoomed restores the home view on both axes', () => {
-  const root = document.createElement('section'); document.body.append(root);
-  const input = {title:'T',xLabel:'X',yLabel:'Y',points:[{x:1,y:10,group:'A'},{x:4,y:1000,group:'A'},{x:9,y:100,group:'B'}]};
-  const home = drawScatter(root, input, {renderer:'svg', controls:false});
-  const homeView = home.getState().view; home.destroy();
-  const zoomed = {x:[homeView.x[0] * 5, homeView.x[1] * 5], y:[homeView.y[0] * 5, homeView.y[1] * 5]};
-  const handle = drawScatter(root, input, {renderer:'svg', controls:false, view:zoomed});
-  try {
-    handle.setScale('y','log');
-    assert.deepEqual(handle.getState().view.x, homeView.x, 'X must not stay zoomed when Y changes scale');
-    handle.setScale('y','linear');
-    assert.deepEqual(handle.getState().view, homeView);
-  } finally { handle.destroy(); root.remove(); }
-});
-
-test('the scatter legend uses a custom stats provider when the data is not sampled', () => {
-  const root = document.createElement('section'); document.body.append(root);
-  const model = createModel(...generatedPair(5).map(text => buildPlotData(text)));
-  setStatsProvider(points => ({ n: points.length, r: 0.5, slope: 1, intercept: 0 }));
-  const handle = drawScatter(root, model.view().charts[2], {renderer:'svg', controls:false});
-  try {
-    assert.match(root.querySelector('.trend-stat').textContent, /r = 0\.50/);
-  } finally { setStatsProvider(); handle.destroy(); root.remove(); }
-});
-
-test('focusing or hovering a hidden legend item does not dim the visible groups', () => {
-  const root = document.createElement('section'); document.body.append(root);
-  const input = {title:'T',xLabel:'X',yLabel:'Y',groupNames:['A','B'],hiddenGroups:['A'],points:[{x:1,y:1,group:'A'},{x:2,y:2,group:'B'},{x:3,y:1,group:'B'}]};
-  const handle = drawScatter(root, input, {renderer:'svg', controls:false});
-  try {
-    const [hiddenItem, visibleItem] = root.querySelectorAll('.legend-item');
-    hiddenItem.focus();
-    assert.equal(root.querySelectorAll('.scatter-plot .dimmed').length, 0);
-    visibleItem.focus();
-    assert.equal(root.querySelectorAll('.scatter-plot .dimmed').length, 0, 'B is the only visible group');
-  } finally { handle.destroy(); root.remove(); }
 });
 
 test('an all-hidden chart retains every group control for recovery', () => {
@@ -199,37 +160,14 @@ test('original empty state, examples and automatic two-file loading coordinate w
   assert.deepEqual([...document.querySelectorAll('#charts > section.scatter')].map(n=>n.id),['chart-a','chart-b','chart-scatter']);
   const initialRows = $('data-table').tBodies[0].rows.length;
   const group = $('chart-a').querySelector('.legend-item').textContent;
-  $('chart-a').querySelector('.legend-item').focus();
   $('chart-a').querySelector('.legend-item').click();
   await until(() => $('line-a-note').textContent.includes('hidden by'));
-  assert.equal(document.activeElement.textContent, group, 'focus returns to the toggled legend item after the redraw (M2)');
-  assert.ok($('chart-a').contains(document.activeElement));
   assert.equal($('chart-a').querySelector('.legend-item').getAttribute('aria-pressed'),'false');
   assert.equal($('chart-b').querySelector('.legend-item').getAttribute('aria-pressed'),'true');
   await until(() => $('data-table').tBodies[0].rows.length < initialRows);
   assert.ok(![...$('data-table').tBodies[0].rows].some(row=>row.cells[0].textContent===group));
-  $('chart-b').querySelector('.legend-item').focus();
   $('chart-a').querySelector('.legend-item').click();
   await until(() => $('data-table').tBodies[0].rows.length===initialRows);
-  assert.ok($('chart-b').contains(document.activeElement) || document.activeElement === document.body, 'a toggle not made from the focused button does not move focus');
-  assert.ok(!$('chart-a').contains(document.activeElement));
-  // Y3 follow-up: sort options keep fixed keys, labelled by the table's columns.
-  const sortOption = value => $('table-sort').querySelector(`option[value="${value}"]`);
-  document.querySelector('[data-source="2"]').click();
-  await until(() => $('data-table').tHead.rows[0]?.cells.length === 4);
-  assert.equal(sortOption('second').disabled, false);
-  assert.equal(sortOption('second').textContent, 'Hours of Sleep');
-  assert.equal(sortOption('value').textContent, 'Step Count');
-  $('table-sort').value = 'second'; change($('table-sort'));
-  await until(() => { const v = [...$('data-table').tBodies[0].rows].map(r => Number(r.cells[2].textContent)); return v.length && v.every((x, i) => i === 0 || v[i - 1] <= x); });
-  document.querySelector('[data-source="0"]').click();
-  await until(() => $('data-table').tHead.rows[0]?.cells.length === 3);
-  assert.equal(sortOption('second').disabled, true);
-  assert.equal($('table-sort').value, 'value', 'falls back when the second column does not exist');
-  $('table-mode').value = 'group'; change($('table-mode'));
-  await until(() => sortOption('value').textContent === 'Mean');
-  $('table-mode').value = 'detail'; change($('table-mode'));
-  await until(() => $('data-table').tHead.rows[0]?.cells.length === 3);
   for (const example of examples.slice(1)) {
     example.click();
     await until(() => $('task').hidden);
@@ -254,28 +192,8 @@ test('original empty state, examples and automatic two-file loading coordinate w
   assert.equal($('table-details').open,true);
   assert.equal(document.querySelector('[data-source="2"]').getAttribute('aria-pressed'),'true');
   for (const id of ['chart-a','chart-b','chart-scatter']) {
-    assert.deepEqual([...$(id).querySelectorAll('.chart-image-actions button:not(.chart-table-link)')].map(b=>b.textContent),['Copy image','Save PNG']);
-    assert.equal($(id).querySelector('.chart-image-actions').firstElementChild, $(id).querySelector('.chart-table-link'), 'table button shares the image-actions row (6b)');
+    assert.deepEqual([...$(id).querySelectorAll('.chart-image-actions button')].map(b=>b.textContent),['Copy image','Save PNG']);
   }
-  // Y6: a global width in the pinned bar sets every chart; each chart can still override its own.
-  const ownWidth = id => $(id).querySelector('.chart-width select');
-  assert.ok($('plot-width').closest('.chart-settings'));
-  for (const id of ['chart-a','chart-b','chart-scatter']) assert.ok(ownWidth(id), `${id} keeps its own width select`);
-  $('plot-width').value = '640'; change($('plot-width'));
-  for (const id of ['chart-a','chart-b','chart-scatter']) { assert.equal($(id).style.maxWidth, '640px'); assert.equal(ownWidth(id).value, '640'); }
-  ownWidth('chart-b').value = '800'; change(ownWidth('chart-b'));
-  assert.deepEqual(['chart-a','chart-b','chart-scatter'].map(id => $(id).style.maxWidth), ['640px','800px','640px']);
-  $('chart-a').querySelector('.legend-item').click();
-  await until(() => $('line-a-note').textContent.includes('hidden by'));
-  assert.equal($('chart-b').style.maxWidth, '800px', 'a per-chart choice survives redraws');
-  assert.equal($('plot-width').value, 'mixed', 'the global control says the charts differ');
-  $('chart-a').querySelector('.legend-item').click();
-  await until(() => !$('line-a-note').textContent.includes('hidden by'));
-  $('plot-width').value = '640'; change($('plot-width'));   // the same size as before: must still apply to all
-  assert.deepEqual(['chart-a','chart-b','chart-scatter'].map(id => $(id).style.maxWidth), ['640px','640px','640px']);
-  assert.equal($('plot-width').value, '640');
-  $('plot-width').value = ''; change($('plot-width'));
-  for (const id of ['chart-a','chart-b','chart-scatter']) assert.equal($(id).style.maxWidth, 'none', 'the global choice resets every chart');
   assert.equal(observers.size,3);
   assert.equal(themeListeners.size,0);
   dom.window.close();

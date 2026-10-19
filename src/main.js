@@ -1,15 +1,11 @@
 import { drawScatter } from './chart.js';
-import { exportFileName } from './export-name.js';
 
 const $ = id => document.getElementById(id);
 const number = (v, decimals = 2) => Number.isFinite(v) ? v.toLocaleString(undefined, { maximumFractionDigits: decimals }) : '—';
-// Exactly `decimals` places, so values in one column or card line up (Y4).
-const fixed = (v, decimals) => Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : '—';
 let active, candidate, task, request = 0, loadVersion = 0, viewVersion = 0, pageVersion = 0;
 let charts = [], current, page = 0, source = 0, filterTimer;
 let rendererKind = 'canvas';
 let hiddenBySource = [[], [], []];
-let refocus = null; // { id, label } of a legend item to focus after the next redraw
 const chartSettings = [{ x: 'linear', y: 'linear' }, { x: 'linear', y: 'linear' }, { x: 'linear', y: 'linear' }];
 
 function workerClient() {
@@ -84,14 +80,13 @@ function metric(label, value, detail) {
 }
 function paintView(preserve = false) {
   if (!current) return;
-  const { labels, stats, fit, counts, groups, statDecimals = [2, 2] } = current;
-  const stat = (i, field) => fixed(stats[i][field], statDecimals[i]);
+  const { labels, stats, fit, counts, groups } = current;
   $('dataset-label').textContent = `${number(groups, 0)} ${groups === 1 ? 'group' : 'groups'} · ${current.names.join(' + ')}`;
   $('metrics').replaceChildren(
     metric('MATCHED OBSERVATIONS', number(counts[2], 0), `${number(counts[0], 0)} first-file values · ${number(counts[1], 0)} second-file values`),
-    metric('PEARSON CORRELATION', fixed(fit.r, 3), 'Original values · correlation does not imply causation'),
-    metric(`MEAN · ${labels[0]}`, stat(0, 'mean'), `Median ${stat(0, 'median')} · sample SD ${stat(0, 'sd')}`),
-    metric(`MEAN · ${labels[1]}`, stat(1, 'mean'), `Median ${stat(1, 'median')} · sample SD ${stat(1, 'sd')}`),
+    metric('PEARSON CORRELATION', number(fit.r, 3), 'Original values · correlation does not imply causation'),
+    metric(`MEAN · ${labels[0]}`, number(stats[0].mean), `Median ${number(stats[0].median)} · sample SD ${number(stats[0].sd)}`),
+    metric(`MEAN · ${labels[1]}`, number(stats[1].mean), `Median ${number(stats[1].median)} · sample SD ${number(stats[1].sd)}`),
   );
   const warnings = current.warnings;
   $('quality').hidden = !warnings.length;
@@ -100,8 +95,7 @@ function paintView(preserve = false) {
   $('scope-note').textContent = 'Click a group name in a chart to hide or restore that group in that chart. File means follow each line chart; correlation follows the comparison chart. Statistics use all visible groups in original units. Drawing samples, pagination and log axes do not change the analysis sample.';
   paintCharts(preserve);
 }
-// widthOverride: set by the global width control; otherwise each chart keeps its own width choice.
-function paintCharts(preserve = true, widthOverride) {
+function paintCharts(preserve = true) {
   const states = charts.map(h => {
     const state = h.getState();
     return preserve ? state : { maxWidth: state.maxWidth };
@@ -119,15 +113,7 @@ function paintCharts(preserve = true, widthOverride) {
     const fullNote = note;
     const handle = drawScatter($(ids[i]), { ...input, showMeans: $('show-means').checked && i < 2, showTrend: i === 2 && $('show-trend').checked }, {
       ...states[i], renderer, xScale: chartSettings[i].x, yScale: chartSettings[i].y,
-      // Y6: global default, per-chart override; "mixed" is a display state, never a width.
-      maxWidth: widthOverride ?? states[i]?.maxWidth ?? ($('plot-width').value === 'mixed' ? undefined : $('plot-width').value),
-      onVisibilityChange(hidden) {
-        // The redraw replaces the legend, so remember the toggled item if it had focus (M2).
-        const focused = document.activeElement;
-        const toggled = [...hidden, ...hiddenBySource[i]].find(g => hidden.includes(g) !== hiddenBySource[i].includes(g));
-        refocus = focused?.classList.contains('legend-item') && $(ids[i]).contains(focused) ? { id: ids[i], label: toggled || '(no group)' } : null;
-        hiddenBySource[i] = hidden; updateView(true);
-      },
+      onVisibilityChange(hidden) { hiddenBySource[i] = hidden; updateView(true); },
       onHidden(_sampleCount, kinds) {
         chartSettings[i] = kinds;
         const hidden = kinds.x === 'log' && kinds.y === 'log' ? input.eitherNonPositive : kinds.x === 'log' ? input.xNonPositive : kinds.y === 'log' ? input.yNonPositive : 0;
@@ -137,31 +123,17 @@ function paintCharts(preserve = true, widthOverride) {
     charts.push(handle);
     const tableLink = document.createElement('button'); tableLink.type = 'button'; tableLink.className = 'chart-table-link'; tableLink.textContent = 'Show data table';
     tableLink.onclick = () => { selectSource(i); $('table-details').open = true; $('table-details').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-    // Same row as Copy image / Save PNG: table button on the left, image buttons on the right (6b).
-    const imageActions = $(ids[i]).querySelector('.chart-image-actions');
-    if (imageActions) imageActions.prepend(tableLink); else $(ids[i]).append(tableLink);
+    $(ids[i]).insertBefore(tableLink, $(ids[i]).querySelector('.chart-image-actions'));
   });
-  syncGlobalWidth();
 }
-// The global width shows the charts' common width, or "Mixed" when a chart was set on its own.
-// From "Mixed", picking any size is a change, so it always applies to every chart.
-function syncGlobalWidth() {
-  const widths = charts.map(h => h.getState().maxWidth);
-  if (widths.length) $('plot-width').value = widths.every(w => w === widths[0]) ? widths[0] : 'mixed';
-}
-$('charts').addEventListener('change', e => { if (e.target.closest('.scatter .chart-width')) syncGlobalWidth(); });
 async function updateView(preserve = false) {
   if (!active) return;
   const version = ++viewVersion, client = active;
-  // Only the redraw started by a legend toggle restores focus; later updates find nothing pending.
-  const focusTarget = refocus; refocus = null;
   $('charts').setAttribute('aria-busy', 'true');
   try {
     const view = await client.send('view', { query: $('group-filter').value, overview: $('overview').value, hiddenBySource: hiddenBySource.map(groups => [...groups]) }).promise;
     if (version !== viewVersion || client !== active) return;
-    current = view; page = 0; paintView(preserve);
-    if (focusTarget) [...$(focusTarget.id).querySelectorAll('.legend-item')].find(b => b.textContent === focusTarget.label)?.focus({ preventScroll: true });
-    await loadPage();
+    current = view; page = 0; paintView(preserve); await loadPage();
   } catch (e) { if (version === viewVersion) status(e.message, true); }
   finally { if (version === viewVersion) $('charts').removeAttribute('aria-busy'); }
 }
@@ -175,9 +147,8 @@ for (const button of document.querySelectorAll('[data-renderer]')) button.onclic
 };
 $('show-means').onchange = () => current && paintCharts();
 $('show-trend').onchange = () => current && paintCharts();
-$('plot-width').onchange = () => current && paintCharts(true, $('plot-width').value);
 
-function tableOptions() { return { source, mode: $('table-mode').value, sortBy: $('table-sort').value, direction: $('table-direction').value, query: $('group-filter').value, excludedGroups: [...hiddenBySource[source]], size: Number($('page-size').value), page }; }
+function tableOptions() { return { source, mode: $('table-mode').value, sort: $('table-sort').value, query: $('group-filter').value, excludedGroups: [...hiddenBySource[source]], size: Number($('page-size').value), page }; }
 async function loadPage() {
   if (!active) return;
   const version = ++pageVersion, client = active;
@@ -186,11 +157,10 @@ async function loadPage() {
     if (version !== pageVersion || client !== active) return;
     page = result.page;
     const head = document.createElement('tr');
-    labelSortOptions(result.columns, tableOptions().mode);
     result.columns.forEach(c => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = c; head.append(th); });
     $('data-table').tHead.replaceChildren(head);
     const fragment = document.createDocumentFragment();
-    result.rows.forEach(row => { const tr = document.createElement('tr'); row.forEach((value, i) => { const td = document.createElement('td'); if (typeof value === 'number') td.className = 'num'; td.textContent = typeof value === 'number' ? fixed(value, result.decimals?.[i] ?? 3) : value; tr.append(td); }); fragment.append(tr); });
+    result.rows.forEach(row => { const tr = document.createElement('tr'); row.forEach(value => { const td = document.createElement('td'); if (typeof value === 'number') td.className = 'num'; td.textContent = typeof value === 'number' ? number(value, 3) : value; tr.append(td); }); fragment.append(tr); });
     $('data-table').tBodies[0].replaceChildren(fragment);
     $('table-empty').hidden = result.total !== 0;
     const start = result.total ? page * result.size + 1 : 0, end = Math.min((page + 1) * result.size, result.total);
@@ -203,25 +173,10 @@ async function loadPage() {
 function selectSource(index) {
   source = index; page = 0;
   for (const tab of document.querySelectorAll('[data-source]')) tab.setAttribute('aria-pressed', String(Number(tab.dataset.source) === source));
-  syncSortOptions(); loadPage();
+  loadPage();
 }
 for (const b of document.querySelectorAll('[data-source]')) b.onclick = () => selectSource(Number(b.dataset.source));
-// Median, SD, Min and Max only exist for summaries; detail rows fall back to value.
-// The second file's value is a separate column only in matched pairs (All observations).
-function syncSortOptions() {
-  const detail = $('table-mode').value === 'detail';
-  for (const option of $('table-sort').querySelectorAll('[data-summary]')) option.hidden = option.disabled = detail;
-  for (const option of $('table-sort').querySelectorAll('[data-pairs]')) option.hidden = option.disabled = !(detail && source === 2);
-  if ($('table-sort').selectedOptions[0]?.disabled) $('table-sort').value = 'value';
-}
-// Option keys stay fixed; only their labels follow the table's own column names (e.g. "Step Count", "Mean").
-function labelSortOptions(columns, mode) {
-  const option = value => $('table-sort').querySelector(`option[value="${value}"]`);
-  option('value').textContent = mode === 'detail' ? columns.at(-1) : 'Mean';
-  if (mode === 'detail' && columns.length > 3) option('second').textContent = columns[2];
-}
-syncSortOptions();
-for (const id of ['table-mode', 'table-sort', 'table-direction', 'page-size']) $(id).onchange = () => { syncSortOptions(); page = 0; loadPage(); };
+for (const id of ['table-mode', 'table-sort', 'page-size']) $(id).onchange = () => { page = 0; loadPage(); };
 $('prev').onclick = () => { page--; loadPage(); };
 $('next').onclick = () => { page++; loadPage(); };
 $('export').onclick = async () => {
@@ -234,7 +189,7 @@ $('export').onclick = async () => {
     const result = await job.promise;
     if (cancelled) return;
     const url = URL.createObjectURL(result.blob), a = document.createElement('a');
-    a.href = url; a.download = exportFileName(current, options, result.rows); a.click();
+    a.href = url; a.download = `steps-sleep-${['first-file', 'second-file', 'matched-pairs'][options.source]}-${options.mode}.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     status(`Exported ${number(result.rows, 0)} rows across all pages · ${options.mode === 'detail' ? 'cleaned observations' : 'summary statistics'}.`);
   } catch (e) { if (!cancelled) status(e.message, true); }
