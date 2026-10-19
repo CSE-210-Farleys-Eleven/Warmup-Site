@@ -131,7 +131,8 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; }
   color: var(--text-muted);
 }
 
-.scatter-reset {
+.scatter-reset,
+.scatter-download {
   font: inherit;
   color: var(--text-secondary);
   background: none;
@@ -140,7 +141,8 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; }
   padding: 3px 10px;
   cursor: pointer;
 }
-.scatter-reset:hover { color: var(--text-primary); }
+.scatter-reset:hover,
+.scatter-download:hover { color: var(--text-primary); }
 
 .scatter-plot { position: relative; width: 100%; }
 .scatter-plot {

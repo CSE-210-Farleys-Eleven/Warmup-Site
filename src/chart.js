@@ -54,6 +54,7 @@ export { linearScale, niceStep, niceTicks, logTicks } from './scales.js';
  * @property {(kind: RendererKind) => void} setRenderer
  * @property {(axis: 'x' | 'y', kind: ScaleKind) => void} setScale
  * @property {() => {renderer: RendererKind, xScale: ScaleKind, yScale: ScaleKind, hidden: number}} getState
+ * @property {() => Promise<void>} downloadImage
  *
  * @typedef {Object} Mark   one drawn point
  * @property {Point} point  original input point
@@ -110,6 +111,26 @@ function htmlEl(tag, className, text) {
   return node;
 }
 
+/** @param {string} text */
+function safeFileName(text) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'chart';
+}
+
+/**
+ * @param {Blob} blob
+ * @param {string} filename
+ */
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = htmlEl('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 /**
  * Mean y for each distinct (un-jittered) x.
  * @param {Mark[]} marks
@@ -159,6 +180,7 @@ export function drawScatter(container, input, options = {}) {
     setRenderer: () => {},
     setScale: () => {},
     getState: () => ({ renderer: rendererKind, xScale: kinds.x, yScale: kinds.y, hidden: 0 }),
+    downloadImage: async () => {},
   };
 
   if (points.length === 0) {
@@ -224,7 +246,9 @@ export function drawScatter(container, input, options = {}) {
   const toolbar = htmlEl('div', 'scatter-toolbar');
   const hint = htmlEl('span', 'scatter-hint', 'Drag to pan · Ctrl/⌘ + scroll to zoom · double-click to reset');
   const resetBtn = htmlEl('button', 'scatter-reset', 'Reset view');
+  const downloadBtn = htmlEl('button', 'scatter-download', 'Download');
   resetBtn.type = 'button';
+  downloadBtn.type = 'button';
   toolbar.append(hint);
 
   /** @type {Record<'x' | 'y', HTMLSelectElement>} */
@@ -243,7 +267,7 @@ export function drawScatter(container, input, options = {}) {
       toolbar.append(label);
     }
   }
-  toolbar.append(resetBtn);
+  toolbar.append(downloadBtn, resetBtn);
 
   const plot = htmlEl('div', 'scatter-plot');
   const tooltip = htmlEl('div', 'scatter-tooltip');
@@ -562,6 +586,33 @@ export function drawScatter(container, input, options = {}) {
   handle.setRenderer = setRenderer;
   handle.setScale = setScale;
   handle.getState = () => ({ renderer: rendererKind, xScale: kinds.x, yScale: kinds.y, hidden: countUnplottable() });
+
+  async function downloadImage() {
+    hideTooltip();
+    const filename = `${safeFileName(title)}.${rendererKind === 'svg' ? 'svg' : 'png'}`;
+    if (renderer.el instanceof HTMLCanvasElement) {
+      const blob = await new Promise((resolve, reject) => {
+        renderer.el.toBlob((value) => {
+          if (value) resolve(value);
+          else reject(new Error('Canvas export failed'));
+        }, 'image/png');
+      });
+      triggerDownload(/** @type {Blob} */ (blob), filename);
+      return;
+    }
+    if (renderer.el instanceof SVGSVGElement) {
+      const svgText = new XMLSerializer().serializeToString(renderer.el);
+      const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+      triggerDownload(blob, filename);
+      return;
+    }
+    throw new Error('Unsupported renderer element for download');
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    downloadImage().catch(() => {});
+  });
+  handle.downloadImage = downloadImage;
 
   // ---- Legend -------------------------------------------------------------
   if (hasGroups) {
