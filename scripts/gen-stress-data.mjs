@@ -9,8 +9,9 @@
 // Output is deterministic (seeded RNG), so timings are comparable run to run.
 import { mkdir, writeFile } from 'node:fs/promises';
 
-/** Total cells (people × columns) per fixture. */
-export const SIZES = [1_000, 10_000, 100_000, 500_000, 1_000_000];
+/** Total cells (people × columns) per fixture. 150k sits just past the
+ * ~124k-argument limit on Math.min(...xs) seen in Chromium 152. */
+export const SIZES = [1_000, 10_000, 100_000, 150_000, 500_000, 1_000_000];
 
 /**
  * tall:   many people, 7 columns (the class data's shape, scaled up)
