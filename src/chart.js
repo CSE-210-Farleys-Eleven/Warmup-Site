@@ -465,6 +465,39 @@ export function drawScatter(container, input, options = {}) {
   }
 
   /**
+   * What the tooltip says for a point or mean bar. Shared with the SVG export,
+   * which turns it into native <title> tooltips.
+   * @param {Hit} hit
+   * @returns {{heading: string, rows: [string, string][]}}
+   */
+  function tooltipContent(hit) {
+    if (hit.kind === 'point') {
+      const { point, group } = hit.mark;
+      /** @type {[string, string][]} */
+      const rows = [[xLabel, xText(point.x)], [yLabel, formatValue(point.y)]];
+      if (point.category) rows.unshift(['Category', point.category]);
+      return { heading: hasGroups ? group || '(no group)' : '', rows };
+    }
+    const { mean } = hit;
+    return { heading: 'Mean', rows: [[xLabel, xText(mean.x)], [yLabel, formatValue(mean.y)], ['n', String(mean.n)]] };
+  }
+
+  /** @param {Hit} hit */
+  function tooltipText(hit) {
+    const { heading, rows } = tooltipContent(hit);
+    return [heading, ...rows.map(([k, v]) => `${k}: ${v}`)].filter(Boolean).join('\n');
+  }
+
+  // Tooltip text for every drawn point and mean bar, in drawing order, for the SVG export.
+  function exportTooltips() {
+    if (!scene) return null;
+    return {
+      points: scene.marks.map((m) => tooltipText({ kind: 'point', mark: m.mark })),
+      means: scene.means.map((bar) => tooltipText({ kind: 'mean', mean: bar.mean })),
+    };
+  }
+
+  /**
    * @param {Hit | null} hit
    * @param {number} px
    * @param {number} py
@@ -472,21 +505,9 @@ export function drawScatter(container, input, options = {}) {
   function showTooltip(hit, px, py) {
     if (!hit) { hideTooltip(); return; }
 
-    /** @type {[string, string][]} */
-    let rows;
-    let heading;
-    if (hit.kind === 'point') {
-      const { mark } = hit;
-      heading = hasGroups ? mark.group || '(no group)' : '';
-      rows = [[xLabel, xText(mark.point.x)], [yLabel, formatValue(mark.point.y)]];
-      if (mark.point.category) rows.unshift(['Category', mark.point.category]);
-      renderer.setHover({ px: sx.map(mark.x), py: sy.map(mark.y) });
-    } else {
-      const { mean } = hit;
-      heading = 'Mean';
-      rows = [[xLabel, xText(mean.x)], [yLabel, formatValue(mean.y)], ['n', String(mean.n)]];
-      renderer.setHover(null);
-    }
+    const { heading, rows } = tooltipContent(hit);
+    if (hit.kind === 'point') renderer.setHover({ px: sx.map(hit.mark.x), py: sy.map(hit.mark.y) });
+    else renderer.setHover(null);
 
     // textContent only: group names come from user-uploaded CSVs.
     tooltip.replaceChildren();
@@ -712,7 +733,7 @@ export function drawScatter(container, input, options = {}) {
   });
   observer.observe(plot);
   const layout = addLayoutControls(container, () => { hideTooltip(); render(); }, options.maxWidth ?? '960');
-  const removeImages = addImageActions(container);
+  const removeImages = addImageActions(container, { tooltips: exportTooltips });
   const resize = () => { hideTooltip(); render(); };
   window.addEventListener('resize', resize);
   handle.destroy = (preserveFullscreen = false) => { observer.disconnect(); window.removeEventListener('resize', resize); removeImages(); layout.destroy(preserveFullscreen); renderer.destroy(); container.replaceChildren(); };

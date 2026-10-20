@@ -6,7 +6,7 @@ import { buildPlotData } from '../src/data.js';
 import { createModel, generatedPair } from '../src/model.js';
 import { drawScatter } from '../src/chart.js';
 import { setStatsProvider } from '../src/stats.js';
-import { chartPng } from '../src/chart-image.js';
+import { chartPng, chartSvg } from '../src/chart-image.js';
 
 // DOM contract tests, not a substitute for browser layout, native fullscreen,
 // clipboard permissions or actual PNG decoding. Network/worker transports and
@@ -114,7 +114,7 @@ test('an all-hidden chart retains every group control for recovery', () => {
   const input = model.view({hiddenBySource:[['Person 00001','Person 00002']]}).charts[0];
   const handle = drawScatter(root,input,{renderer:'svg'});
   assert.equal(root.querySelectorAll('.legend-item[aria-pressed="false"]').length,2);
-  assert.equal(root.querySelectorAll('.chart-image-actions button').length,2);
+  assert.equal(root.querySelectorAll('.chart-image-actions button').length,3);
   handle.destroy(); root.remove();
 });
 
@@ -144,9 +144,30 @@ test('Canvas and SVG export contracts include chart context and report clipboard
   assert.ok(text.includes('Test chart')); assert.ok(text.includes('2 drawn of 2 observations'));
   assert.ok(text.some(label=>label.includes('Linear fit') && label.includes('n = 2')));
   assert.ok(fills.includes('#1a1a19'));
+  // SVG export needs the SVG renderer; on canvas it explains why instead of saving a raster.
+  assert.throws(()=>chartSvg(root),/switch this chart to SVG/);
   handle.setRenderer('svg');
   assert.equal((await chartPng(root)).type,'image/png');
   assert.ok(sources.at(-1) instanceof Image);
+  const vector = chartSvg(root);
+  assert.equal(vector.type,'image/svg+xml;charset=utf-8');
+  const svgText = await vector.text();
+  assert.ok(svgText.startsWith('<?xml'));
+  assert.ok(svgText.includes('Test chart') && svgText.includes('2 drawn of 2 observations'));
+  assert.ok(svgText.includes('class="point"'), 'the plotted points are kept as vector shapes');
+  assert.ok(!svgText.includes('hover-ring'));
+  // The Save SVG button passes the chart's tooltip text along, so points get native hover labels.
+  const saveSvg = [...root.querySelectorAll('.chart-image-actions button')].find(button=>button.textContent==='Save SVG');
+  const originalUrl = URL.createObjectURL, originalClick = window.HTMLAnchorElement.prototype.click;
+  let saved;
+  URL.createObjectURL = blob => { saved = blob; return 'blob:test'; };
+  window.HTMLAnchorElement.prototype.click = () => {};
+  saveSvg.click();
+  URL.createObjectURL = originalUrl; window.HTMLAnchorElement.prototype.click = originalClick;
+  const hoverText = await saved.text();
+  assert.equal((hoverText.match(/<title>/g) || []).length, 2, 'one hover label per drawn point');
+  assert.ok(hoverText.includes('<title>A\nX: 1\nY: 2</title>'));
+  assert.equal(root.querySelectorAll('.scatter-plot title').length, 0, 'the live chart keeps only its own tooltip');
   root.querySelector('.chart-image-actions button').click();
   assert.equal(clipboardCalls,1);
   await until(()=>root.querySelector('.chart-image-status').textContent.includes('Permission denied'));
@@ -254,7 +275,7 @@ test('original empty state, examples and automatic two-file loading coordinate w
   assert.equal($('table-details').open,true);
   assert.equal(document.querySelector('[data-source="2"]').getAttribute('aria-pressed'),'true');
   for (const id of ['chart-a','chart-b','chart-scatter']) {
-    assert.deepEqual([...$(id).querySelectorAll('.chart-image-actions button:not(.chart-table-link)')].map(b=>b.textContent),['Copy image','Save PNG']);
+    assert.deepEqual([...$(id).querySelectorAll('.chart-image-actions button:not(.chart-table-link)')].map(b=>b.textContent),['Copy image','Save PNG','Save SVG']);
     assert.equal($(id).querySelector('.chart-image-actions').firstElementChild, $(id).querySelector('.chart-table-link'), 'table button shares the image-actions row (6b)');
   }
   // Y6: a global width in the pinned bar sets every chart; each chart can still override its own.
