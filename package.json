@@ -5,7 +5,9 @@
     "check:stats": "node --experimental-detect-module scripts/check-stats.mjs",
     "parse:data": "node src/data.js",
     "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "stress:gen": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-stress-data.mjs",
+    "stress": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/stress-bench.mjs"
   },
   "dependencies": {
     "papaparse": "5.7.0"
