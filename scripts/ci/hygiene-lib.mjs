@@ -103,16 +103,15 @@ export function checkForbiddenFiles(files) {
 export function checkNewSrcFile(file, content) {
   if (!/^src\/(?!vendor\/).+\.js$/.test(file)) return [];
   const lines = (content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content).split('\n');
-  const out = [];
-  if (lines[0].trim() !== '// @ts-check') {
-    out.push(issue('error', 'file-header', `${file} must start with "// @ts-check".`, file));
+  const missing = [];
+  const hasTsCheck = lines[0].trim() === '// @ts-check';
+  if (!hasTsCheck) missing.push('start with "// @ts-check"');
+  if (!lines.slice(hasTsCheck ? 1 : 0).join('\n').trimStart().startsWith('/**')) {
+    missing.push('have a /** ... */ file header after it');
   }
-  const rest = lines.slice(lines[0].trim() === '// @ts-check' ? 1 : 0).join('\n').trimStart();
-  if (!rest.startsWith('/**')) {
-    out.push(issue('error', 'file-header',
-      `${file} needs a /** ... */ file header after "// @ts-check" (see templates/function-headers.md).`, file));
-  }
-  return out;
+  return missing.length
+    ? [issue('error', 'file-header', `New file ${file} must ${missing.join(' and ')} (see templates/function-headers.md).`, file)]
+    : [];
 }
 
 /**
