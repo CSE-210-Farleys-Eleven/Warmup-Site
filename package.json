@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "papaparse": "5.7.0"
+    "papaparse": "5.7.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
