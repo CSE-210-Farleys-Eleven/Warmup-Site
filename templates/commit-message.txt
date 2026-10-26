@@ -1,0 +1,34 @@
+
+# ── Subject (line 1) ───────────────────────────────────────────────
+# <Imperative verb> <what changed> [(<goal ID or issue>)]
+#   - Imperative, sentence case, no period, about 72 characters max.
+#   - Describe the result for the user or the code, not the activity.
+#   example: Reset both axes when switching between linear and log scale (#12)
+#
+# ── Body (after one blank line, wrap at 72) ────────────────────────
+# Why: the problem or request this solves, and how it showed up.
+#
+# What: the change in plain words. List the behavior the user sees
+# first, then the code changes that a reviewer should know about
+# (renamed APIs, reverted code, new files).
+#
+# Overhead: (optional) cost at runtime, e.g. "nothing runs on pan/zoom".
+#
+# Plan deviation: (optional) where this differs from the agreed plan
+# or PR goal list, and why.
+#
+# Tests: what was added or changed, and whether it fails before and
+# passes after.
+# npm test: <passed>/<total> pass.
+# Browser: (if UI) the steps you clicked through and what you saw.
+#
+# ── Trailers (optional, last lines) ───────────────────────────────
+# Refs: #<issue or PR>
+# Co-Authored-By: <Name> <email>
+#
+# ── Small commits ─────────────────────────────────────────────────
+# Docs-only or trivial commits can use a one-line body, e.g.:
+#   Docs only. npm test: 42/42 pass.
+#
+# One logical change per commit. If the subject needs "and", consider
+# splitting it.
