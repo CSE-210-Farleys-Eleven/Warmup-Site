@@ -2,15 +2,23 @@
   "name": "warmup-site",
   "private": true,
   "scripts": {
+    "check:hygiene": "node scripts/ci/check-hygiene.mjs",
     "check:stats": "node --experimental-detect-module scripts/check-stats.mjs",
+    "lint": "eslint .",
+    "lint:changed": "node scripts/ci/lint-changed.mjs",
     "parse:data": "node src/data.js",
     "start": "node server.js",
-    "test": "node --test test/*.test.js test/*.test.mjs"
+    "test": "node --test test/*.test.js test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "papaparse": "5.7.0"
   },
   "devDependencies": {
-    "jsdom": "30.1.2"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "jsdom": "30.1.2",
+    "typescript": "7.0.2"
   }
 }
