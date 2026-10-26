@@ -6,6 +6,8 @@ test('image filenames are bounded and contain no path separators', () => {
   assert.equal(imageFileName('../'), 'chart.png');
   assert.ok(imageFileName('A'.repeat(500)).length <= 104);
   assert.equal(imageFileName('Steps / Sleep', 'svg'), 'Steps-Sleep.svg');
+  assert.equal(imageFileName(''), 'chart.png', 'empty title falls back to chart');
+  assert.equal(imageFileName(undefined, 'svg'), 'chart.svg');
 });
 test('image dimensions obey pixel and dimension budgets', () => {
   for (const [width, height] of [[800, 500], [8000, 4000], [2000, 10000]]) {
