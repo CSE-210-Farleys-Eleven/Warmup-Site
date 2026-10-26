@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  checkBranchName, checkCommitSubject, checkPinnedDependencies, checkTestsAndDocs, toAnnotations,
+  checkBranchName, checkCommitSubject, checkPinnedDependencies, checkPullRequestBody, checkTestsAndDocs,
+  toAnnotations,
 } from '../scripts/ci/hygiene-lib.mjs';
 
 const rules = (issues) => issues.map((i) => i.rule);
@@ -55,4 +56,9 @@ test('annotations escape newlines and carry the file', () => {
 
 test('the PR template copy used by GitHub matches templates/pull-request.md', () => {
   assert.equal(readFileSync('.github/pull_request_template.md', 'utf8'), readFileSync('templates/pull-request.md', 'utf8'));
+});
+
+test('a commit with several wording problems produces one warning, not one per problem', () => {
+  assert.equal(checkCommitSubject('added a sample file.').length, 1);
+  assert.equal(checkPullRequestBody('Just a draft.').length, 1);
 });

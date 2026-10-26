@@ -52,8 +52,8 @@ export function checkBranchName(name) {
 export function checkCommitSubject(subject) {
   const s = (subject || '').trim();
   if (/^(Merge |Revert |fixup! |squash! )/.test(s)) return [];
-  const out = [];
-  const warn = (message) => out.push(issue('warning', 'commit-subject', `"${s}": ${message}`));
+  const problems = [];
+  const warn = (message) => problems.push(message);
   if (!s) return [issue('warning', 'commit-subject', 'Empty commit subject.')];
   if (s.length > MAX_SUBJECT) warn(`subject is ${s.length} characters; keep it to ${MAX_SUBJECT} or fewer.`);
   if (/[.!?:;,]$/.test(s)) warn('subject should not end with punctuation.');
@@ -62,7 +62,8 @@ export function checkCommitSubject(subject) {
   if (/(ed|ing)$/.test(first) && first.length > 4 && !IMPERATIVE_OK.has(first)) {
     warn(`use the imperative ("Add", not "${s.split(/\s+/)[0]}").`);
   }
-  return out;
+  // One warning per commit, however many things are wrong with it.
+  return problems.length ? [issue('warning', 'commit-subject', `"${s}": ${problems.join(' ')}`)] : [];
 }
 
 /**
@@ -167,16 +168,19 @@ export function checkTestsAndDocs(files) {
  */
 export function checkPullRequestBody(body) {
   const text = (body || '').replace(/<!--[\s\S]*?-->/g, '');
-  const out = [];
+  const problems = [];
   for (const heading of ['Summary', 'How to test']) {
     const m = new RegExp(`^##\\s+${heading}\\s*$([\\s\\S]*?)(?=^##\\s|(?![\\s\\S]))`, 'im').exec(text);
     const section = m ? m[1].replace(/`[^`\n]*`/g, '') : '';
     const content = section.replace(/^\*\*[^\n]*$/gm, '').trim();
-    if (!m) out.push(issue('warning', 'pr-body', `PR description is missing a "## ${heading}" section (see .github/pull_request_template.md).`));
-    else if (/<[^>\n]{1,40}>/.test(section)) out.push(issue('warning', 'pr-body', `"## ${heading}" still has <placeholder> text from the template.`));
-    else if (!content) out.push(issue('warning', 'pr-body', `"## ${heading}" in the PR description is empty.`));
+    if (!m) problems.push(`Missing a "## ${heading}" section.`);
+    else if (/<[^>\n]{1,40}>/.test(section)) problems.push(`"## ${heading}" still has <placeholder> text from the template.`);
+    else if (!content) problems.push(`"## ${heading}" is empty.`);
   }
-  return out;
+  // One warning for the whole description.
+  return problems.length
+    ? [issue('warning', 'pr-body', `PR description: ${problems.join(' ')} See .github/pull_request_template.md.`)]
+    : [];
 }
 
 /**
