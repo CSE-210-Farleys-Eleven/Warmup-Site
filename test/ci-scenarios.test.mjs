@@ -115,6 +115,14 @@ test('a long line added to code warns, but old long lines do not', () => {
   { warnings: ['line-length'] });
 });
 
+test('many long lines in one file give a single warning', () => {
+  const many = Array.from({ length: 12 }, (_, i) => LONG.replace('longLine', `line${i}`)).join('');
+  const r = run({ commits: [{ message: 'Add long constants', files: {
+    'src/old.js': `${LONG}export const old = 1;\n${many}`, 'test/t.test.js': 'export {};\n', 'docs/d.md': '# D\n' } }] });
+  expectRun(r, { warnings: ['line-length'] });
+  assert.equal(r.out.match(/title=line-length/g).length, 1, r.out);
+});
+
 test('a new src file without @ts-check or a header fails', () => {
   expectRun(run({ commits: [{ message: 'Add helper', files: { 'src/helper.js': 'export const a = 1;\n', 'test/h.test.js': 'export {};\n', 'docs/h.md': '# H\n' } }] }),
     { status: 1, errors: ['file-header'] });

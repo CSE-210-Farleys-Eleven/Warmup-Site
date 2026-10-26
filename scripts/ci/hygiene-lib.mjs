@@ -121,6 +121,7 @@ export function checkNewSrcFile(file, content) {
  */
 export function checkAddedLines(diff) {
   const out = [];
+  const longLines = new Map();
   let file = '';
   let lineNo = 0;
   for (const raw of diff.split('\n')) {
@@ -135,9 +136,17 @@ export function checkAddedLines(diff) {
     }
     const isCode = /\.(m?js|css|html)$/.test(file) && !file.includes('vendor/');
     if (isCode && text.length > MAX_LINE) {
-      out.push(issue('warning', 'line-length', `${where} is ${text.length} characters; keep new lines to ${MAX_LINE} or fewer.`, file));
+      if (!longLines.has(file)) longLines.set(file, []);
+      longLines.get(file).push(lineNo);
     }
     lineNo += 1;
+  }
+  // One warning per file, so a big new file doesn't bury the other warnings.
+  for (const [name, numbers] of longLines) {
+    const shown = numbers.slice(0, 3).join(', ');
+    const more = numbers.length > 3 ? ` and ${numbers.length - 3} more` : '';
+    out.push(issue('warning', 'line-length',
+      `${name} has ${numbers.length} added line(s) over ${MAX_LINE} characters (line ${shown}${more}).`, name));
   }
   return out;
 }
