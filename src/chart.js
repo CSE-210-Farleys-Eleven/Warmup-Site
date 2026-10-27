@@ -300,7 +300,6 @@ export function drawScatter(container, input, options = {}) {
   // the plot, so it can't hide data and is the same text in both renderers.
   let statText = '';
   /** @type {HTMLSpanElement | null} */ let trendStatEl = null;
-  let lastHidden = -1;
 
   placeMarks();
 
