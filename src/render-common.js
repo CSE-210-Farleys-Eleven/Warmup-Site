@@ -38,8 +38,11 @@
  * @property {() => void} destroy
  */
 
-export const POINT_R = 5;        // 10px markers
-export const SERIES_SLOTS = 8;   // colors defined in styles.css (--series-1..8)
+/** Marker radius in CSS pixels (10px markers). */
+export const POINT_R = 5;
+/** Number of distinct series colors and shapes; colors are `--series-1..8` in styles.css. */
+export const SERIES_SLOTS = 8;
+/** Half the width of a group's mean bar, in x-axis units; a log x axis uses a fixed pixel width. */
 export const MEAN_HALF_WIDTH = 0.3;
 
 // Secondary encoding: 8 colors can't all be told apart in one scatter
@@ -49,20 +52,39 @@ export const MEAN_HALF_WIDTH = 0.3;
 //                   blue      orange    aqua        yellow     magenta     green     violet     red
 const SLOT_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'triangle', 'circle', 'diamond', 'cross'];
 
-/** CSS custom property name for a series slot. @param {number} slot */
+/**
+ * CSS custom property name for a series slot. Slots from `SERIES_SLOTS` up share
+ * `--series-other`. A negative slot gives a name that styles.css doesn't define. Never throws.
+ * @param {number} slot  0-based series index
+ * @returns {string}
+ * @example
+ * seriesVar(0)  // => '--series-1'
+ * seriesVar(8)  // => '--series-other'
+ */
 export function seriesVar(slot) {
   return slot < SERIES_SLOTS ? `--series-${slot + 1}` : '--series-other';
 }
 
-/** @param {number} slot */
+/**
+ * CSS color value for a series slot, for SVG `fill` and `stroke` attributes.
+ * @param {number} slot  0-based series index
+ * @returns {string}
+ * @example
+ * colorFor(2)  // => 'var(--series-3)'
+ */
 export function colorFor(slot) {
   return `var(${seriesVar(slot)})`;
 }
 
 /**
- * Path data for a marker shape centered on (0, 0); positioned with a transform.
- * @param {number} slot
- * @param {number} r
+ * SVG path data for a marker shape centered on (0, 0); position it with a transform.
+ * Each slot has its own shape so series stay distinguishable without color; slots from
+ * `SERIES_SLOTS` up get a circle. Never throws.
+ * @param {number} slot  0-based series index
+ * @param {number} r     marker radius in pixels; the shapes are scaled to look the same size
+ * @returns {string}     value for a path's `d` attribute (also accepted by `new Path2D`)
+ * @example
+ * shapePath(1, 5)  // => 'M-4.5,-4.5H4.5V4.5H-4.5Z' (a square)
  */
 export function shapePath(slot, r) {
   const shape = slot < SERIES_SLOTS ? SLOT_SHAPES[slot] : 'circle';

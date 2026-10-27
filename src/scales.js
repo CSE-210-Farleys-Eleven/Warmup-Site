@@ -7,9 +7,13 @@
  * t-space, so they are plain linear arithmetic whichever scale is active.
  */
 
-/** @typedef {'linear' | 'log'} ScaleKind */
+/**
+ * Axis type: `'linear'` plots values as they are; `'log'` plots log10 of positive values.
+ * @typedef {'linear' | 'log'} ScaleKind
+ */
 
 /**
+ * A mapping between data values and pixels along one axis, built by `makeScale`.
  * @typedef {Object} Scale
  * @property {ScaleKind} kind
  * @property {(v: number) => number} map        data value -> pixel (NaN if not representable)
@@ -17,31 +21,60 @@
  * @property {(px: number) => number} invertT   pixel -> t-space value
  */
 
-/** @param {ScaleKind} kind @param {number} v */
+/**
+ * Converts a data value to t-space (the value itself, or log10 of it on a log axis).
+ * Returns NaN for a log axis when `v` is zero, negative or NaN. Never throws.
+ * @param {ScaleKind} kind
+ * @param {number} v  data value
+ * @returns {number}  t-space value
+ * @example
+ * toT('log', 1000)  // => 3
+ * toT('log', 0)     // => NaN
+ */
 export function toT(kind, v) {
   return kind === 'log' ? (v > 0 ? Math.log10(v) : NaN) : v;
 }
 
-/** @param {ScaleKind} kind @param {number} t */
+/**
+ * Converts a t-space value back to a data value; the inverse of `toT`. Never throws.
+ * @param {ScaleKind} kind
+ * @param {number} t  t-space value
+ * @returns {number}  data value (`10 ** t` on a log axis, `t` itself on a linear one)
+ * @example
+ * fromT('log', 3)  // => 1000
+ */
 export function fromT(kind, t) {
   return kind === 'log' ? 10 ** t : t;
 }
 
 /**
- * Whether a data value can be drawn on an axis of this kind.
+ * Whether a data value can be drawn on an axis of this kind: finite, and also above zero on
+ * a log axis. NaN and +/-Infinity are never plottable. Never throws.
  * @param {ScaleKind} kind
- * @param {number} v
+ * @param {number} v  data value
+ * @returns {boolean}
+ * @example
+ * isPlottable('log', 0)     // => false
+ * isPlottable('linear', 0)  // => true
  */
 export function isPlottable(kind, v) {
   return Number.isFinite(v) && (kind !== 'log' || v > 0);
 }
 
 /**
- * Map from a t-space domain to a pixel range, for the given axis kind.
+ * Builds a scale from a t-space domain to a pixel range, for the given axis kind.
+ * The range may run backwards (e.g. `[height, 0]` for a y axis). A zero-width domain gives
+ * infinite or NaN pixels rather than an error. `map` returns NaN for values the axis can't
+ * show (zero or negative on a log axis). Never throws.
  * @param {ScaleKind} kind
- * @param {[number, number]} tDomain
- * @param {[number, number]} range
+ * @param {[number, number]} tDomain  visible extent in t-space (log10 units on a log axis)
+ * @param {[number, number]} range    pixel positions of the two domain ends
  * @returns {Scale}
+ * @example
+ * const y = makeScale('log', [0, 3], [0, 300]);
+ * y.map(10)      // => 100
+ * y.invert(200)  // => 100
+ * y.map(-1)      // => NaN
  */
 export function makeScale(kind, tDomain, range) {
   const [d0, d1] = tDomain;
@@ -57,9 +90,12 @@ export function makeScale(kind, tDomain, range) {
 }
 
 /**
- * Linear map from a data domain to a pixel range.
- * @param {[number, number]} domain
- * @param {[number, number]} range
+ * Linear scale from a data domain to a pixel range; shorthand for `makeScale('linear', ...)`.
+ * @param {[number, number]} domain  data values at the two ends
+ * @param {[number, number]} range   pixel positions of the two ends
+ * @returns {Scale}
+ * @example
+ * linearScale([0, 10], [100, 0]).map(2.5)  // => 75
  */
 export function linearScale(domain, range) {
   return makeScale('linear', domain, range);
@@ -67,8 +103,14 @@ export function linearScale(domain, range) {
 
 /**
  * A "nice" step (1, 2 or 5 times a power of ten) giving roughly `count` intervals.
- * @param {number} span
- * @param {number} count
+ * A `count` below 1 is treated as 1. A span of 0 gives 0, and a negative or NaN span gives
+ * NaN, so callers must check the step before looping on it. Never throws.
+ * @param {number} span   length of the range to divide, in data units
+ * @param {number} count  desired number of intervals
+ * @returns {number}      step size in data units
+ * @example
+ * niceStep(100, 5)  // => 20
+ * niceStep(7, 5)    // => 1
  */
 export function niceStep(span, count) {
   const raw = span / Math.max(1, count);
@@ -80,10 +122,16 @@ export function niceStep(span, count) {
 
 /**
  * Tick values at multiples of a nice step inside [min, max].
- * @param {number} min
- * @param {number} max
+ * Returns no ticks (and a NaN step) when `max < min` or either end is NaN. Ticks are
+ * products `i * step`, so decimals can carry float noise; format them with `formatTick`.
+ * Throws a RangeError when `min === max` (the step is 0 and the loop never ends), so give
+ * it a padded extent such as the one from `paddedExtent`.
+ * @param {number} min    lowest value on the axis
+ * @param {number} max    highest value on the axis
  * @param {number} count  desired number of intervals
- * @returns {{ticks: number[], step: number}}
+ * @returns {{ticks: number[], step: number}}  ascending tick values and the step between them
+ * @example
+ * niceTicks(0, 10, 5)  // => {ticks: [0, 2, 4, 6, 8, 10], step: 2}
  */
 export function niceTicks(min, max, count) {
   const step = niceStep(max - min, count);
@@ -98,10 +146,15 @@ export function niceTicks(min, max, count) {
 /**
  * How many categories to step between labels so the widest one doesn't
  * overlap its neighbour: 1 shows every label, 3 shows every third.
- * A degenerate axis (no width) shows every label rather than hiding them.
- * @param {number} pxPerUnit    pixels between neighbouring categories
- * @param {number} widestLabelPx
- * @param {number} [gapPx]      minimum space between labels
+ * A degenerate axis (no width, negative or NaN spacing) shows every label rather than
+ * hiding them. Never throws.
+ * @param {number} pxPerUnit      pixels between neighbouring categories
+ * @param {number} widestLabelPx  width of the longest label, in pixels
+ * @param {number} [gapPx]        minimum space between labels, in pixels (default 8)
+ * @returns {number}              step between shown labels, at least 1
+ * @example
+ * categoryLabelStep(50, 90)   // => 2
+ * categoryLabelStep(200, 40)  // => 1
  */
 export function categoryLabelStep(pxPerUnit, widestLabelPx, gapPx = 8) {
   if (!(pxPerUnit > 0)) return 1;
@@ -113,10 +166,15 @@ export function categoryLabelStep(pxPerUnit, widestLabelPx, gapPx = 8) {
  * Always powers of ten; intermediate 2 and 5 (or 1-9) are added when few
  * decades are visible so the axis never looks empty, but only as many as fit
  * within `maxTicks` (1-9 crowds up quickly: 2,000 ... 9,000 are close together).
- * @param {number} tMin
- * @param {number} tMax
- * @param {number} [maxTicks]
+ * A range that is empty or reversed (`tMax < tMin`) gives no ticks, and a zero-width range
+ * gives the one power of ten it sits on, if any. Never throws.
+ * @param {number} tMin  lowest visible value in t-space (log10 units)
+ * @param {number} tMax  highest visible value in t-space
+ * @param {number} [maxTicks]  most ticks to return (default 8)
  * @returns {number[]}  data values, ascending
+ * @example
+ * logTicks(0, 3)  // => [1, 10, 100, 1000]
+ * logTicks(0, 1)  // => [1, 2, 5, 10]
  */
 export function logTicks(tMin, tMax, maxTicks = 8) {
   const span = tMax - tMin;
@@ -146,8 +204,15 @@ export function logTicks(tMin, tMax, maxTicks = 8) {
 }
 
 /**
- * Label for a log-axis tick: plain numbers for moderate sizes, 1e6-style otherwise.
- * @param {number} v
+ * Label for a log-axis tick: plain numbers (with thousands separators) for moderate sizes,
+ * `1e6`-style from 1,000,000 up and below 0.0001. `v` must be above zero: zero gives
+ * "NaNe-Infinity", and a log axis never has such ticks. Never throws.
+ * @param {number} v  tick value in data units, greater than 0
+ * @returns {string}  text for the axis; thousands separators follow the browser locale
+ * @example
+ * formatLogTick(1000)  // => '1,000'
+ * formatLogTick(2e6)   // => '2e6'
+ * formatLogTick(5e-5)  // => '5e-5'
  */
 export function formatLogTick(v) {
   const exp = Math.floor(Math.log10(v) + 1e-9);
@@ -159,9 +224,15 @@ export function formatLogTick(v) {
 }
 
 /**
- * Format a linear tick value with just enough decimals for the tick step.
- * @param {number} v
- * @param {number} step
+ * Format a linear tick value with just enough decimals for the tick step (none for a step
+ * of 1 or more). Throws a RangeError when `step` is 0, negative or NaN, so pass the step
+ * from `niceTicks`.
+ * @param {number} v     tick value
+ * @param {number} step  distance between ticks, greater than 0
+ * @returns {string}     text for the axis; separators follow the browser locale
+ * @example
+ * formatTick(2.5, 0.5)    // => '2.5'
+ * formatTick(1200, 100)   // => '1,200'
  */
 export function formatTick(v, step) {
   const decimals = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
@@ -170,11 +241,17 @@ export function formatTick(v, step) {
 
 /**
  * t-space extent of data values, padded so points don't sit on the frame.
- * Values that can't be drawn on this axis kind are ignored.
+ * Values that can't be drawn on this axis kind are ignored. With nothing plottable it returns
+ * `[0, 1]`; a single distinct value is widened by 1 on each side before padding, so the
+ * result always has a positive width. Never throws.
  * @param {ScaleKind} kind
- * @param {number[]} values  data values
- * @param {number} [pad]
- * @returns {[number, number]}
+ * @param {number[]} values  data values, in data units
+ * @param {number} [pad]     fraction of the extent added on each side (default 0.06)
+ * @returns {[number, number]}  lowest and highest value in t-space
+ * @example
+ * paddedExtent('linear', [0, 10])         // => [-0.6, 10.6]
+ * paddedExtent('log', [10, 1000, -1, 0])  // => [0.88, 3.12]
+ * paddedExtent('log', [0, -3])            // => [0, 1]
  */
 export function paddedExtent(kind, values, pad = 0.06) {
   const ts = values.filter((v) => isPlottable(kind, v)).map((v) => toT(kind, v));
