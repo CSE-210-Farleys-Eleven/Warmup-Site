@@ -1,3 +1,6 @@
 .DS_Store
 node_modules/
 data/result.json
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/

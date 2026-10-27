@@ -15,6 +15,7 @@ How GitHub Actions checks pull requests and gates deployment, and which rule fro
 | Tests | `npm ci --ignore-scripts`, `npm test`, `npm run check:stats` on Node 24 | Test suite and stats sanity check | Yes |
 | Type check | `npm run typecheck` | Files that start with `// @ts-check` (see [tsconfig.json](../tsconfig.json)) | Yes |
 | Lint changed files | `scripts/ci/lint-changed.mjs` | ESLint on JavaScript changed in the PR: `var`, `prefer-const`, unused variables, `console`, `debugger`, single quotes, semicolons, 2-space indent, final newline | Yes |
+| End-to-end (Cypress) | `cypress-io/github-action` starts `npm start` and runs `cypress/e2e/*.cy.js` in headless Chrome | Loading an example, the three charts, Canvas/SVG switch, data table and filter | Yes |
 | Hygiene (PRs only) | `scripts/ci/check-hygiene.mjs` | See below | Errors only |
 
 Hygiene rules:
@@ -54,6 +55,7 @@ Hygiene rules:
 
 ```sh
 npm test
+npm run test:e2e   # Cypress, headless; `npm start` + `npm run cy:open` to watch it
 npm run lint
 npm run typecheck
 npm run check:hygiene -- --base origin/main --head HEAD --branch "$(git branch --show-current)"
