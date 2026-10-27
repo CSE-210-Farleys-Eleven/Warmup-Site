@@ -1,5 +1,9 @@
 # PR #5 — review fixes for PR #4
 
+**Applies to:** `fix/pr4-review-fixes` (PR #5, merged 2026-10-19) · **Files:** [main.js](../src/main.js), [model.js](../src/model.js), [export-name.js](../src/export-name.js), [chart.js](../src/chart.js), [index.html](../index.html), [styles.css](../styles.css) · **Related:** #4, #5, #32
+
+This is a historical goal list: the goals, decisions and test counts describe PR #5 when it merged and are not updated. For how the code behaves now, read the headers in the files above.
+
 Branch `fix/pr4-review-fixes`, based on `feature/scalable-tables-chart-export` (PR #4).
 PR #5 targets PR #4's branch. Goals come from the PR #4 review: **Y** = reviewer findings,
 **M** = additional issues found while reviewing.
