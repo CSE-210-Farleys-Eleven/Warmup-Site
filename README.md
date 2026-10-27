@@ -113,7 +113,7 @@ See [renderer and table implementation notes](docs/renderer-and-tables.md) for d
 | [Architecture](docs/architecture.md) | Every source module, main/worker boundaries and the Mermaid data-flow diagram. |
 | [Data pipeline](docs/data-pipeline.md) | Import/model/table/CSV contracts, messages, error handling and executed examples. |
 | [Chart layout](docs/chart-layout.md) | Per-chart width, native/fallback fullscreen, cleanup and state transfer. |
-| [ex188 contribution record](docs/contributions-ex188.md) | Original implementation evidence, this documentation scope and teammate attribution. |
+| [Anthony contribution record](docs/contributions-anthony.md) | Original implementation evidence, this documentation scope and teammate attribution. |
 | [CI](docs/ci.md) | Current checks, repository hygiene and remaining branch-rule work. |
 
 The historical [PR #4 notes](docs/renderer-and-tables.md) and

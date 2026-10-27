@@ -1,11 +1,11 @@
-# Contribution record: ex188
+# Contribution record: Anthony
 
-This page records ex188's implementation and documentation contributions with
+This page records Anthony's implementation and documentation contributions with
 commit evidence. It distinguishes original work from the existing chart/parser
 foundation and subsequent work by other contributors.
 
 **Applies to:** implementation merged through PR #4; documentation prepared for #17
-and ex188's portion of #23 · **Files:** [module contracts](data-pipeline.md),
+and Anthony's portion of #23 · **Files:** [module contracts](data-pipeline.md),
 [layout](chart-layout.md), [architecture](architecture.md) ·
 **Related:** [PR #4](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/pull/4),
 [#17](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/issues/17),
@@ -15,9 +15,9 @@ and ex188's portion of #23 · **Files:** [module contracts](data-pipeline.md),
 
 The original implementation is recorded in
 [`3d82f1b`](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/commit/3d82f1b33071be7abbc3dd62ed2b171c569eb699),
-authored by GitHub account `ex188` and submitted as PR #4.
+authored by Anthony and submitted as PR #4.
 
-| Area | ex188's contribution | Main files/evidence |
+| Area | Anthony's contribution | Main files/evidence |
 | --- | --- | --- |
 | Responsive data processing | Introduces candidate/active worker coordination, chunked file reads, import budgets and cancellation while retaining prior successful results. | `main.js`, `pipeline.worker.js` in `3d82f1b`. |
 | Scalable inspection | Adds the full-data model, a shared capped/paged table, summaries, filtering, global sorting and complete selected-view CSV export. | `model.js`, `main.js`, worker serialization in `3d82f1b`. |
@@ -36,7 +36,7 @@ authored by GitHub account `ex188` and submitted as PR #4.
 - Grouped-statistics helpers originate in PR #2. PR #4 integrates them rather than
   claiming those algorithms as new work.
 - Later PR #5 sorting/precision/focus/global-width and restoration commits are
-  authored by Yinuo Zhou (`enochzhouyz`), a different GitHub account from `ex188`.
+  authored by Yinuo Zhou (`enochzhouyz`), a different contributor from Anthony.
   [`docs/pr5-review-fixes.md`](pr5-review-fixes.md) records that work.
 - The current SVG export, tooltip preservation and export-helper refactoring come
   from Poorva's PR #12. Header/export documentation is separately proposed in #27.
@@ -51,10 +51,10 @@ does not imply exclusive authorship of every function now in those files.
 | Issue | Completed local scope |
 | --- | --- |
 | #17 | Repository-wide architecture overview, every `src/` module's responsibility, Mermaid data flow, analysis/display boundaries and links to existing documentation. |
-| #23, ex188's portion | File/function/type contracts and `@ts-check` coverage for `main.js`, `model.js`, `pipeline.worker.js`, `chart-layout.js` and `export-name.js`; pipeline/layout references and executed example tests. |
+| #23, Anthony's portion | File/function/type contracts and `@ts-check` coverage for `main.js`, `model.js`, `pipeline.worker.js`, `chart-layout.js` and `export-name.js`; pipeline/layout references and executed example tests. |
 | Contribution visibility | This evidence-based record and a README link, keeping contributor names out of code headers as the template requires. |
 
-This update completes #17 and ex188's documentation scope in #23. It does not close
+This update completes #17 and Anthony's documentation scope in #23. It does not close
 the shared #23 task for other contributors or duplicate the chart-image work in #27.
 The worker/view/export behavior and application UI remain unchanged.
 
