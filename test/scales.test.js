@@ -82,6 +82,13 @@ test('niceTicks still behaves', () => {
   assert.deepEqual(niceTicks(0, 10, 5).ticks, [0, 2, 4, 6, 8, 10]);
 });
 
+test('niceTicks returns no ticks for an empty or reversed range instead of hanging', () => {
+  assert.deepEqual(niceTicks(3, 3, 5).ticks, []);
+  assert.ok(Number.isNaN(niceTicks(3, 3, 5).step));
+  assert.deepEqual(niceTicks(5, 0, 5).ticks, []);
+  assert.deepEqual(niceTicks(NaN, 5, 5).ticks, []);
+});
+
 test('stats provider can be swapped and restored', () => {
   const pts = [{ x: 1, y: 2 }, { x: 2, y: 4 }, { x: 3, y: 6 }];
   const builtin = computeStats(pts);

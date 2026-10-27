@@ -122,10 +122,9 @@ export function niceStep(span, count) {
 
 /**
  * Tick values at multiples of a nice step inside [min, max].
- * Returns no ticks (and a NaN step) when `max < min` or either end is NaN. Ticks are
- * products `i * step`, so decimals can carry float noise; format them with `formatTick`.
- * Throws a RangeError when `min === max` (the step is 0 and the loop never ends), so give
- * it a padded extent such as the one from `paddedExtent`.
+ * Returns no ticks (and a NaN step) when the range is empty (`min === max`), reversed
+ * (`max < min`) or has a NaN end. Ticks are products `i * step`, so decimals can carry float
+ * noise; format them with `formatTick`. Never throws.
  * @param {number} min    lowest value on the axis
  * @param {number} max    highest value on the axis
  * @param {number} count  desired number of intervals
@@ -135,6 +134,8 @@ export function niceStep(span, count) {
  */
 export function niceTicks(min, max, count) {
   const step = niceStep(max - min, count);
+  // A zero span gives step 0, and a negative or NaN span gives NaN; neither can be looped on.
+  if (!(step > 0)) return { ticks: [], step: NaN };
   const ticks = [];
   // Integer loop avoids floating-point drift from repeated addition.
   for (let i = Math.ceil(min / step); i <= Math.floor(max / step); i++) {
