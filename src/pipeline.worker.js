@@ -1,13 +1,55 @@
+// @ts-check
+/**
+ * Read and validate CSV files, retain a complete model and serialize CSV off-thread.
+ * Import cancellation terminates this worker from main.js. CSV cancellation is
+ * cooperative between 1,000-row batches. Replies carry the request id and exactly
+ * one of result, progress or error; file contents are never sent to a server.
+ */
+
+/** @typedef {ReturnType<typeof import('./model.js').createModel>} DataModel */
+/** @typedef {{files?: File[], generated?: number, edge?: boolean}} LoadPayload */
+/**
+ * Requests supported by the worker. Payloads are trusted application messages,
+ * not a public validation API. A model is required for view, page and export.
+ * @typedef {Object} WorkerRequest
+ * @property {number} [id] Correlation id, omitted only for cancel-export messages.
+ * @property {'load' | 'view' | 'page' | 'export' | 'cancel-export'} type Request name.
+ * @property {LoadPayload & import('./model.js').ViewOptions &
+ *   import('./model.js').TableOptions & {id?: number}} [payload] Type-specific fields.
+ */
 import Papa from './vendor/papa.js';
 import { buildFromParsed } from './data.js';
 import { createModel, generatedPair, LIMITS } from './model.js';
 
-let model, cancelledExports = new Set();
+/** @type {DataModel | undefined} */
+let model;
+/** Request ids cancelled before their next cooperative CSV yield. */
+const cancelledExports = new Set();
+/**
+ * Stream one file in 256 KiB chunks and reuse the shared parser's cleaning rules.
+ * Mutate the shared cell budget and post progress under the owning load request.
+ * Throw immediately for an oversized file; reject for invalid headers, exceeded
+ * budgets, read errors or no usable numeric series. No silent truncation occurs.
+ * Blank and malformed rows still count toward the scanned-record/cell budgets.
+ * @param {File} file File whose bytes are read with Papa Parse.
+ * @param {number} id Load request id.
+ * @param {number} index Zero-based position in the pair, used in progress text.
+ * @param {{cells: number}} budget Combined input-cell counter for both files.
+ * @returns {Promise<import('./model.js').ParsedData>} Cleaned data for the model.
+ */
 function parseFile(file, id, index, budget) {
   if (file.size > LIMITS.fileBytes) throw new Error(`${file.name}: exceeds the 5 MiB per-file limit. Choose a smaller file.`);
   return new Promise((resolve, reject) => {
-    let record = 0, columns, failed = false;
-    const rows = [], recordNumbers = [], warnings = [];
+    let record = 0;
+    /** @type {string[] | undefined} */
+    let columns;
+    let failed = false;
+    /** @type {string[][]} */
+    const rows = [];
+    /** @type {number[]} */
+    const recordNumbers = [];
+    /** @type {string[]} */
+    const warnings = [];
     const warn = text => { if (warnings.length < 200) warnings.push(text); };
     Papa.parse(file, { delimiter: ',', chunkSize: 256 * 1024, step(result, parser) {
       try {
@@ -42,6 +84,13 @@ function parseFile(file, id, index, budget) {
     }, error: reject });
   });
 }
+/**
+ * Dispatch a structured-clone request and serialize failures as English messages.
+ * A successful load replaces this worker's model after both files are parsed.
+ * Table/CSV requests preserve complete filtered values, independent of plot samples.
+ * @param {MessageEvent<WorkerRequest>} event Request from the owning page.
+ * @returns {Promise<void>} Completion means the terminal reply has been posted.
+ */
 self.onmessage = async ({ data: { id, type, payload = {} } }) => {
   if (type === 'cancel-export') { cancelledExports.add(payload.id); return; }
   try {
@@ -53,7 +102,12 @@ self.onmessage = async ({ data: { id, type, payload = {} } }) => {
       const parsed = [];
       for (let i = 0; i < 2; i++) parsed.push(await parseFile(files[i], id, i, budget));
       self.postMessage({ id, progress: 'Matching groups and categories · calculating summaries…' });
-      model = createModel(...parsed, files.map(f => f.name));
+      model = createModel(
+        .../** @type {[
+          import('./model.js').ParsedData, import('./model.js').ParsedData
+        ]} */ (parsed),
+        files.map(f => f.name),
+      );
       result = model.view();
     } else {
       if (!model) throw new Error('Load a dataset first.');
