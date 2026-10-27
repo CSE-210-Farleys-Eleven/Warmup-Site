@@ -22,6 +22,8 @@ npm run check:stats
 
 The test-only jsdom dependency is pinned in the lockfile. The site's runtime dependency on Papa Parse retains the existing version.
 
+To contribute, follow [CONTRIBUTING.md](CONTRIBUTING.md): branches, checks, reviews, releases and deployment.
+
 ## Use
 
 Select both CSV files to load them automatically, or choose an existing example. The page starts without charts. A failed or cancelled replacement keeps the previous successful dataset available.
