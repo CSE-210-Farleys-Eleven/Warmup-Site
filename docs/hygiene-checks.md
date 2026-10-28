@@ -1,8 +1,8 @@
 # Hygiene check scripts
 
-This page is the reference for the scripts behind the CI jobs **Hygiene** and **Lint changed files**: [hygiene-lib.mjs](../scripts/ci/hygiene-lib.mjs) (the checks), [check-hygiene.mjs](../scripts/ci/check-hygiene.mjs) (the command that runs them on a PR) and [lint-changed.mjs](../scripts/ci/lint-changed.mjs). It is for anyone adding a rule or debugging a CI failure. [ci.md](ci.md) lists which rule is an error or a warning and why; this page documents the code.
+This page is the reference for the scripts behind the CI job **Hygiene**: [hygiene-lib.mjs](../scripts/ci/hygiene-lib.mjs) (the checks) and [check-hygiene.mjs](../scripts/ci/check-hygiene.mjs) (the command that runs them on a PR). The **Lint** job needs no script: it runs `npm run lint`. It is for anyone adding a rule or debugging a CI failure. [ci.md](ci.md) lists which rule is an error or a warning and why; this page documents the code.
 
-**Applies to:** `main` through PR #34 · **Files:** [hygiene-lib.mjs](../scripts/ci/hygiene-lib.mjs), [check-hygiene.mjs](../scripts/ci/check-hygiene.mjs), [lint-changed.mjs](../scripts/ci/lint-changed.mjs) · **Related:** #18, #26, [ci.md](ci.md), [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
+**Applies to:** `main` · **Files:** [hygiene-lib.mjs](../scripts/ci/hygiene-lib.mjs), [check-hygiene.mjs](../scripts/ci/check-hygiene.mjs) · **Related:** #18, #26, [ci.md](ci.md), [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
 
 ## Overview
 
@@ -83,15 +83,6 @@ npm run check:hygiene -- --base origin/main --head HEAD --branch docs/function-h
 # hygiene: 0 error(s), 1 warning(s), 6 file(s) changed
 ```
 
-### `lint-changed.mjs`
-
-```sh
-node scripts/ci/lint-changed.mjs <base>
-```
-
-Runs ESLint with `--max-warnings=0` on the `.js` and `.mjs` files changed since `<base>`, skipping `src/vendor/` and `demo/`. Older files still have a few style violations, so linting everything would fail PRs on code nobody touched.
-
-**Edge cases:** with no base, or an all-zero SHA (a new branch), it prints `lint: no base commit, skipping.` and exits 0. With no changed JavaScript it prints `lint: no changed JavaScript files.` and exits 0. Otherwise it exits with ESLint's status.
 
 ## Design
 
