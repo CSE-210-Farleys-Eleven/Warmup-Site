@@ -28,6 +28,7 @@ All checks return `Issue[]`.
 | `checkBranchName(name)` | branch name, not a ref | warning `branch-name` unless it is `<type>/<short-description>` in lower case. Types: feature, fix, docs, refactor, test, chore. Empty names and `dependabot/`, `copilot/`, `revert-`, `main`, `main-backup` are exempt. |
 | `checkCommitSubject(subject)` | first line of a commit message | one warning `commit-subject` listing every problem: over `MAX_SUBJECT` (100) characters, trailing punctuation, not capitalized, or a first word ending in `-ed`/`-ing` (not an imperative). Merge, revert, fixup! and squash! subjects are exempt. |
 | `checkPinnedDependencies(pkg)` | parsed package.json | error `pinned-deps` per dependency that is not an exact version, in `dependencies`, `devDependencies` and `optionalDependencies`. |
+| `checkLockfile(baseText, headText, lockfileChanged)` | package.json at the merge base and at the head, and whether the lockfile changed | error `lockfile` when `dependencies`, `devDependencies`, `optionalDependencies` or `peerDependencies` differ and `package-lock.json` did not change. Script and metadata edits are fine. A missing base counts as changed. |
 | `checkForbiddenFiles(files)` | changed paths | error `forbidden-file` for `node_modules/`, `.DS_Store`, `.idea/` and `result.json`, at any depth. |
 | `checkNewSrcFile(file, content)` | path and text of a newly added file | error `file-header` when a new `src/` `.js` file (not `src/vendor/`) lacks `// @ts-check` first or a `/** */` header after it. A leading byte-order mark is allowed. |
 | `checkAddedLines(diff)` | output of `git diff -U0 --no-color` | error `secret` for an added line that looks like an AWS key, a GitHub or `sk-` token or a private key; one warning `line-length` per file with added lines over `MAX_LINE` (100) characters, in .js, .mjs, .css and .html files outside `vendor/`. |
@@ -73,7 +74,7 @@ Run from the repository root. It checks what the PR **adds** (`base...head`), so
 | `--pr-body-file` | file holding the PR description for `checkPullRequestBody` |
 | `--skip-style` | for bot PRs: skips branch, commit-subject, tests/docs and PR-body checks, keeps the safety checks (files, pins, lockfile, headers, secrets, line length) |
 
-It also raises error `lockfile` when `package.json` changed without `package-lock.json`.
+
 
 **Exit codes:** 0 when there are no errors (warnings are fine), 1 when any error was found, 2 when `--base` or `--head` is missing. In GitHub Actions it also appends a summary to `GITHUB_STEP_SUMMARY`.
 

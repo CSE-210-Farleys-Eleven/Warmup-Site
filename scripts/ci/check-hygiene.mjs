@@ -10,8 +10,8 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import {
-  checkAddedLines, checkBranchName, checkCommitSubject, checkForbiddenFiles, checkNewSrcFile,
-  checkPinnedDependencies, checkPullRequestBody, checkTestsAndDocs, toAnnotations,
+  checkAddedLines, checkBranchName, checkCommitSubject, checkForbiddenFiles, checkLockfile,
+  checkNewSrcFile, checkPinnedDependencies, checkPullRequestBody, checkTestsAndDocs, toAnnotations,
 } from './hygiene-lib.mjs';
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -38,11 +38,12 @@ const issues = [];
 
 issues.push(...checkForbiddenFiles(changed));
 if (changed.includes('package.json')) {
-  issues.push(...checkPinnedDependencies(JSON.parse(git('show', `${head}:package.json`))));
-  if (!changed.includes('package-lock.json')) {
-    issues.push({ level: 'error', rule: 'lockfile', file: 'package.json',
-      message: 'package.json changed but package-lock.json did not; commit the lockfile with it.' });
-  }
+  const headPackage = git('show', `${head}:package.json`);
+  issues.push(...checkPinnedDependencies(JSON.parse(headPackage)));
+  const mergeBase = git('merge-base', base, head).trim();
+  let basePackage = null;
+  try { basePackage = git('show', `${mergeBase}:package.json`); } catch { /* new file */ }
+  issues.push(...checkLockfile(basePackage, headPackage, changed.includes('package-lock.json')));
 }
 for (const file of added) issues.push(...checkNewSrcFile(file, git('show', `${head}:${file}`)));
 issues.push(...checkAddedLines(git('diff', '-U0', '--no-color', `${base}...${head}`)));

@@ -24,7 +24,7 @@ Hygiene rules:
 | --- | --- | --- |
 | `forbidden-file`: `node_modules/`, `.DS_Store`, `.idea/`, `result.json` added | Error | Checklist, Repository |
 | `pinned-deps`: a dependency with `^`, `~` or a range | Error | Checklist, Repository |
-| `lockfile`: `package.json` changed without `package-lock.json` | Error | Checklist, Repository |
+| `lockfile`: a `package.json` dependency list changed without `package-lock.json` (scripts and metadata edits are fine) | Error | Checklist, Repository |
 | `file-header`: new `src/` file lacks `// @ts-check` or a `/** */` header | Error | [function-headers.md](../templates/function-headers.md) |
 | `secret`: an added line looks like a token or private key | Error | Checklist, Code |
 | `line-length`: an added line is over 100 characters | Warning | Checklist, Formatting |
