@@ -32,7 +32,7 @@ One page per contributor, with commit and test evidence and credit for other peo
 | [Ekansh](contributions/ekansh.md) | Canvas and SVG renderers, log scale, CI and the reference pages for them. |
 | [Noy](contributions/noy.md) | The Canvas/SVG toggle bar, r and n in the legend, category-label thinning and other small UI fixes, and the contributor workflow. |
 | [Poorva](contributions/poorva.md) | Save SVG, export documentation and the Cypress tests. |
-| [Yinuo](contributions/yinuo.md) | The PR #5 review fixes, the repair after the PR #3 revert, and `setScale` documentation. |
+| [Yinuo](contributions/yinuo.md) | The PR #5 review fixes, the repair after the PR #3 revert, `setScale` documentation and the code review template. |
 
 ## Historical notes
 
