@@ -47,7 +47,11 @@ The original examples, selected-example styling, sticky renderer toggle, measure
 
 - Counts, means, medians, sample standard deviations and correlation summarize complete data for the selected visible groups, not just drawn points. Group/category summary tables also show minimum and maximum.
 - Legend visibility belongs to each chart independently. Hiding a group in the first line chart updates that chart's means without hiding it in the second chart or scatter. Scatter exclusions update its fit and correlation. Table and CSV use their selected chart source's exclusions and the shared group filter.
-- A log axis cannot draw zero or negative values. The chart note counts those exclusions; analysis and exports continue to use original values. Regression is ordinary least squares in original units, not a regression of log-transformed values.
+- A log axis cannot draw zero or negative values. The chart note counts those
+  exclusions; worker metric cards, tables and CSV keep the original selected data.
+  An unsampled scatter's displayed fit uses its plottable points and the page's
+  stats provider; a sampled scatter uses the worker's complete selected-data fit.
+  Regression remains ordinary least squares in original units, not log-space.
 - The scatter's r and n stay in its legend rather than covering plotted values. Mean markers and the scatter fit can be configured above the charts.
 - Above 20 visible groups, line charts show labelled category averages. Filter to at most 20 groups to see individual lines. This cap also applies to the Individual groups option.
 - Charts draw at most 3,000 deterministic samples. Sampling preserves drawing responsiveness but does not represent every point or the full distribution density. Notes and PNG captions state the drawn/full counts or averaging scope.
@@ -96,6 +100,26 @@ Oversized input is rejected explicitly rather than silently truncated. Parsing u
 
 `drawScatter` retains `setRenderer`, `setScale` and `getState`, and adds `destroy` for cleanup. It accepts optional full-data `statsOverride`/`meanPoints`, group/exclusion metadata and an `onVisibilityChange` callback for worker recalculation. Chart state includes view, width and legend search/page so legend changes retain interaction state.
 
-The synchronous `setStatsProvider` extension remains available for direct chart use. The app supplies full-data fit results from the worker; changing the worker's statistics pipeline is required to replace that calculation. A future backend should return complete raw-unit summaries and exclusion counts separately from sampled drawing data; no backend or API service is introduced here.
+The synchronous `setStatsProvider` extension remains available for direct chart
+use and unsampled scatter fits. Sampled scatters receive a full-data worker fit;
+replacing that calculation requires changing the worker's statistics pipeline.
+A future backend should return complete raw-unit summaries and exclusion counts
+separately from sampled drawing data; no backend or API service is introduced here.
 
 See [renderer and table implementation notes](docs/renderer-and-tables.md) for data flow, branch integration and validation limits.
+
+## Contributor documentation
+
+| Read this | For |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Every source module, main/worker boundaries and the Mermaid data-flow diagram. |
+| [Data pipeline](docs/data-pipeline.md) | Import/model/table/CSV contracts, messages, error handling and executed examples. |
+| [Chart layout](docs/chart-layout.md) | Per-chart width, native/fallback fullscreen, cleanup and state transfer. |
+| [Anthony contribution record](docs/contributions-anthony.md) | Original implementation evidence, this documentation scope and teammate attribution. |
+| [CI](docs/ci.md) | Current checks, repository hygiene and remaining branch-rule work. |
+
+The historical [PR #4 notes](docs/renderer-and-tables.md) and
+[PR #5 review fixes](docs/pr5-review-fixes.md) retain their original validation
+results. New contributions follow the [header](templates/function-headers.md),
+[documentation](templates/documentation.md) and
+[PR](templates/pull-request.md) templates.
