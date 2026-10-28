@@ -10,7 +10,17 @@ import { POINT_R, seriesVar, shapePath } from './render-common.js';
 /** @typedef {import('./render-common.js').Scene} Scene */
 /** @typedef {import('./render-common.js').Renderer} Renderer */
 
-/** @returns {Renderer} */
+/**
+ * Creates a renderer that draws scenes onto a new `<canvas>` (grid, ticks, axis titles, trend
+ * line, series lines, markers, mean bars and hover ring, in that order).
+ * Side effects: `draw` and the other methods repaint the whole canvas and resize its backing
+ * store for the device pixel ratio; a listener on the OS color-scheme change is added and is
+ * only removed by `destroy`, so call it when the chart is replaced. Nothing is drawn until
+ * `draw` is called, and `setHover` / `setHighlight` before that only store state.
+ * @returns {Renderer}  `el` is the canvas (not yet in the page); `draw(scene)` replaces the
+ *   frame and clears any hover ring; `setHover(null)` hides the ring; `setHighlight(group)`
+ *   dims every other group, and `null` clears it; `destroy()` detaches the canvas.
+ */
 export function createCanvasRenderer() {
   const canvas = document.createElement('canvas');
   canvas.setAttribute('role', 'img');

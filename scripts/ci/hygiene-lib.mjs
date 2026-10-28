@@ -2,12 +2,23 @@
  * Pure checks behind the CI "hygiene" job. Each check takes plain strings or lists and
  * returns issues, so it can be unit-tested without git or GitHub.
  *
- * An issue is `{ level: 'error' | 'warning', rule, message, file? }`. Errors fail CI;
- * warnings are shown as annotations only. Rules come from templates/*.
+ * Errors fail CI; warnings are shown as annotations only. Rules come from templates/*.
+ * Node only (no DOM). No check here throws on odd input; each returns an empty list instead.
  */
 
+/**
+ * One finding from a check.
+ * @typedef {Object} Issue
+ * @property {'error' | 'warning'} level  Errors fail CI; warnings are advisory.
+ * @property {string} rule                Short rule id, used as the annotation title ('secret').
+ * @property {string} message             Human-readable explanation.
+ * @property {string} [file]              Repo-relative path; missing for issues about the whole PR.
+ */
+
+/** Longest added line, in characters, before `checkAddedLines` warns. */
 export const MAX_LINE = 100;
 // The template says "about 72"; real commits here run to ~95, so warn only well past that.
+/** Longest commit subject, in characters, before `checkCommitSubject` warns. */
 export const MAX_SUBJECT = 100;
 const BRANCH_TYPES = ['feature', 'fix', 'docs', 'refactor', 'test', 'chore'];
 // Branches created by tools or GitHub itself, which we don't rename.
@@ -27,12 +38,18 @@ const SECRET_PATTERNS = [
 ];
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
+/** @returns {Issue} An issue; `file` is left out of the object when not given. */
 const issue = (level, rule, message, file) => ({ level, rule, message, ...(file ? { file } : {}) });
 
 /**
- * Branch name must look like `<type>/<short-description>`.
- * @param {string} name Branch name (not a ref).
- * @returns {object[]} Warnings; empty when the name is fine or exempt.
+ * Checks that a branch name looks like `<type>/<short-description>` in lower case.
+ * An empty name, and bot or tool branches (dependabot, copilot, revert-, main), are exempt.
+ * Never throws.
+ * @param {string} name  Branch name, not a full ref (`docs/ci`, not `refs/heads/docs/ci`).
+ * @returns {Issue[]}    One warning, or an empty list when the name is fine or exempt.
+ * @example
+ * checkBranchName('Fix_Bug')  // => [{level: 'warning', rule: 'branch-name', ...}]
+ * checkBranchName('fix/pr4-review-fixes')  // => []
  */
 export function checkBranchName(name) {
   if (!name || BRANCH_EXEMPT.test(name)) return [];
@@ -45,9 +62,14 @@ export function checkBranchName(name) {
 
 /**
  * Commit subject rules from templates/commit-message.txt: imperative, sentence case,
- * no trailing period, about 72 characters (warns past 100). Merge, revert and fixup commits are exempt.
- * @param {string} subject First line of the commit message.
- * @returns {object[]} Warnings.
+ * no trailing punctuation, about 72 characters (warns only past `MAX_SUBJECT`).
+ * Merge, revert, fixup! and squash! commits are exempt. Never throws.
+ * @param {string} subject  First line of the commit message; empty or missing counts as a problem.
+ * @returns {Issue[]}       At most one warning per commit, listing every problem found.
+ * @example
+ * checkCommitSubject('Added tests.')
+ * // => [{level: 'warning', rule: 'commit-subject', message: '"Added tests.": ...'}]
+ * checkCommitSubject('Add tests')  // => []
  */
 export function checkCommitSubject(subject) {
   const s = (subject || '').trim();
@@ -67,9 +89,15 @@ export function checkCommitSubject(subject) {
 }
 
 /**
- * Every dependency must be pinned to an exact version.
- * @param {object} pkg Parsed package.json.
- * @returns {object[]} Errors.
+ * Checks that every dependency is pinned to an exact version (`1.2.3`, optionally with a
+ * pre-release suffix); `^`, `~`, `*`, ranges and tags are errors. Looks at `dependencies`,
+ * `devDependencies` and `optionalDependencies`; missing sections are skipped. Never throws.
+ * @param {Object} pkg  Parsed package.json.
+ * @returns {Issue[]}   One error per unpinned dependency, in file order.
+ * @example
+ * checkPinnedDependencies({devDependencies: {eslint: '^10.0.0'}})
+ * // => [{level: 'error', rule: 'pinned-deps', file: 'package.json',
+ * //      message: 'devDependencies.eslint is "^10.0.0"; pin an exact version ...'}]
  */
 export function checkPinnedDependencies(pkg) {
   const out = [];
@@ -85,9 +113,13 @@ export function checkPinnedDependencies(pkg) {
 }
 
 /**
- * Files that should never be in the repository.
- * @param {string[]} files Paths added or changed in the PR.
- * @returns {object[]} Errors.
+ * Flags files that must never be committed: `node_modules/`, `.DS_Store`, `.idea/` and
+ * `result.json`, at any depth. Never throws.
+ * @param {string[]} files  Repo-relative paths added or changed in the PR, with `/` separators.
+ * @returns {Issue[]}       One error per forbidden path; empty for an empty list.
+ * @example
+ * checkForbiddenFiles(['src/a.js', 'docs/.DS_Store'])
+ * // => one 'forbidden-file' error, for docs/.DS_Store
  */
 export function checkForbiddenFiles(files) {
   return files.filter((f) => FORBIDDEN_PATH.test(f))
@@ -95,10 +127,16 @@ export function checkForbiddenFiles(files) {
 }
 
 /**
- * New files in src/ start with `// @ts-check` and a file header comment.
- * @param {string} file Path of the newly added file.
- * @param {string} content Its contents.
- * @returns {object[]} Errors.
+ * Checks that a new file in `src/` starts with `// @ts-check` followed by a `/** ... *\/` file
+ * header. Files outside `src/`, non-`.js` files and `src/vendor/` are ignored. A leading
+ * byte-order mark is allowed. Never throws.
+ * @param {string} file     Repo-relative path of the newly added file.
+ * @param {string} content  Full text of the file.
+ * @returns {Issue[]}       One error naming everything that is missing; empty if the file is fine.
+ * @example
+ * checkNewSrcFile('src/new.js', 'export const a = 1;\n')
+ * // => [{level: 'error', rule: 'file-header', ...}]
+ * checkNewSrcFile('test/new.js', '')  // => []
  */
 export function checkNewSrcFile(file, content) {
   if (!/^src\/(?!vendor\/).+\.js$/.test(file)) return [];
@@ -116,8 +154,16 @@ export function checkNewSrcFile(file, content) {
 
 /**
  * Checks only the lines a PR adds, so older long lines and old secrets in history don't fail it.
- * @param {string} diff Output of `git diff -U0`.
- * @returns {object[]} Long lines (warnings) and apparent secrets (errors).
+ * Secrets (AWS keys, GitHub and `sk-` tokens, private keys) are errors in any file. Lines over
+ * `MAX_LINE` characters are warnings, only in .js, .mjs, .css and .html files outside `vendor/`,
+ * and are grouped into one warning per file. Never throws; an empty diff gives an empty list.
+ * @param {string} diff  Output of `git diff -U0 --no-color` (zero context lines, so line numbers
+ *                       come from the `@@` hunk headers).
+ * @returns {Issue[]}    Secret errors in diff order, then one line-length warning per file.
+ * @example
+ * checkAddedLines('+++ b/a.js\n@@ -0,0 +1 @@\n+' + 'x'.repeat(120))
+ * // => [{level: 'warning', rule: 'line-length', file: 'a.js',
+ * //      message: 'a.js has 1 added line(s) over 100 characters (line 1).'}]
  */
 export function checkAddedLines(diff) {
   const out = [];
@@ -152,9 +198,13 @@ export function checkAddedLines(diff) {
 }
 
 /**
- * Nudges (never failures): behavior changes in src/ usually come with a test, and with docs.
- * @param {string[]} files Paths changed in the PR.
- * @returns {object[]} Warnings.
+ * Nudges (never failures): a change to `src/` (outside `vendor/`) usually comes with a test in
+ * `test/` and with an update to `docs/` or README.md. Never throws.
+ * @param {string[]} files  Repo-relative paths changed in the PR.
+ * @returns {Issue[]}       Up to two warnings ('tests', 'docs'); empty when `src/` is untouched.
+ * @example
+ * checkTestsAndDocs(['src/stats.js'])  // => a 'tests' warning and a 'docs' warning
+ * checkTestsAndDocs(['src/stats.js', 'test/stats.test.js', 'docs/x.md'])  // => []
  */
 export function checkTestsAndDocs(files) {
   const srcChanged = files.some((f) => /^src\/(?!vendor\/).+\.js$/.test(f));
@@ -169,10 +219,14 @@ export function checkTestsAndDocs(files) {
 }
 
 /**
- * The PR description must have a filled-in Summary and How to test section.
- * HTML comments and `<placeholder>` text from the template count as empty.
- * @param {string} body PR description.
- * @returns {object[]} Warnings.
+ * Checks that the PR description has a filled-in `## Summary` and `## How to test` section.
+ * HTML comments, bold template lines and `<placeholder>` text from the template count as empty.
+ * Never throws.
+ * @param {string} body  PR description; null, undefined or empty reports both sections missing.
+ * @returns {Issue[]}    One warning covering every problem, or an empty list.
+ * @example
+ * checkPullRequestBody('## Summary\nAdds tests.\n\n## How to test\nRun `npm test`.')  // => []
+ * checkPullRequestBody('')  // => one 'pr-body' warning: both sections missing
  */
 export function checkPullRequestBody(body) {
   const text = (body || '').replace(/<!--[\s\S]*?-->/g, '');
@@ -192,9 +246,13 @@ export function checkPullRequestBody(body) {
 }
 
 /**
- * Formats issues as GitHub workflow commands (inline annotations).
- * @param {object[]} issues
- * @returns {string[]}
+ * Formats issues as GitHub workflow commands (`::error file=...,title=...::message`), which
+ * Actions shows as annotations. Escapes `%`, CR and LF in the message. Never throws.
+ * @param {Issue[]} issues
+ * @returns {string[]}  One command line per issue, in the same order; empty for no issues.
+ * @example
+ * toAnnotations([{level: 'error', rule: 'secret', message: 'bad', file: 'a.js'}])
+ * // => ['::error file=a.js,title=secret::bad']
  */
 export function toAnnotations(issues) {
   const esc = (s) => s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');

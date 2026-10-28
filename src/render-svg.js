@@ -11,10 +11,15 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 let clipCounter = 0; // unique clipPath ids when several charts share a page
 
 /**
- * @param {string} tag
- * @param {Record<string, string | number>} [attrs]
- * @param {Element} [parent]
+ * Creates an SVG element in the SVG namespace, sets its attributes and optionally appends it.
+ * Attribute values are converted with `String`. Throws a DOMException for an invalid tag or
+ * attribute name.
+ * @param {string} tag  element name, e.g. 'path'
+ * @param {Record<string, string | number>} [attrs]  attributes to set (default none)
+ * @param {Element} [parent]  element to append the new one to; not appended when omitted
  * @returns {any}  typed loosely so callers can treat it as the specific SVG element
+ * @example
+ * svgEl('line', { x1: 0, x2: 10, y1: 5, y2: 5 }, svgRoot)  // => the new <line>, already in svgRoot
  */
 export function svgEl(tag, attrs = {}, parent) {
   const node = document.createElementNS(SVG_NS, tag);
@@ -23,7 +28,17 @@ export function svgEl(tag, attrs = {}, parent) {
   return node;
 }
 
-/** @returns {Renderer} */
+/**
+ * Creates a renderer that draws scenes as SVG, styled by styles.css (the Canvas renderer's
+ * counterpart; both take the same `Scene`).
+ * Side effects: `draw` rebuilds all children of the `<svg>`, so any previous hover ring is gone
+ * (hidden until `setHover` shows it again). Each renderer uses its own clip-path id so several
+ * charts can share a page. Nothing is drawn until `draw` is called, and `setHover` before
+ * that does nothing. No listeners or timers are created.
+ * @returns {Renderer}  `el` is the `<svg>` (not yet in the page); `setHover(null)` hides the
+ *   ring; `setHighlight(group)` dims every other group, and `null` clears it; `destroy()`
+ *   removes the `<svg>`.
+ */
 export function createSvgRenderer() {
   const clipId = `scatter-clip-${++clipCounter}`;
   /** @type {SVGSVGElement} */
