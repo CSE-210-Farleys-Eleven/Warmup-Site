@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  checkLockfile,
   checkBranchName, checkCommitSubject, checkPinnedDependencies, checkPullRequestBody, checkTestsAndDocs,
   toAnnotations,
 } from '../scripts/ci/hygiene-lib.mjs';
@@ -61,4 +62,16 @@ test('the PR template copy used by GitHub matches templates/pull-request.md', ()
 test('a commit with several wording problems produces one warning, not one per problem', () => {
   assert.equal(checkCommitSubject('added a sample file.').length, 1);
   assert.equal(checkPullRequestBody('Just a draft.').length, 1);
+});
+
+test('lockfile: only dependency changes need it; scripts and metadata do not', () => {
+  const base = JSON.stringify({ scripts: { a: 'x' }, dependencies: { p: '1.0.0' } });
+  const scriptsOnly = JSON.stringify({ scripts: {}, dependencies: { p: '1.0.0' } });
+  const newDependency = JSON.stringify({ scripts: { a: 'x' }, dependencies: { p: '1.0.0' }, devDependencies: { q: '2.0.0' } });
+  assert.deepEqual(checkLockfile(base, scriptsOnly, false), []);
+  assert.deepEqual(checkLockfile(base, base, false), []);
+  assert.deepEqual(checkLockfile(base, newDependency, true), []);
+  assert.deepEqual(checkLockfile(base, newDependency, false).map((i) => [i.level, i.rule]), [['error', 'lockfile']]);
+  assert.equal(checkLockfile(null, base, false).length, 1);
+  assert.deepEqual(checkLockfile(base, 'not json', false), []);
 });

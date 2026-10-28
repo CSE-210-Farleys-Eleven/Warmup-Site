@@ -308,12 +308,20 @@ export function drawScatter(container, input, options = {}) {
     return marks.filter((m) => !hidden.has(m.group) && !plottable(m)).length;
   }
 
+  /** Tells the page, through `options.onHidden`, how many points the current scales can't draw. */
   function reportHidden() {
     const n = countUnplottable();
     options.onHidden?.(n, { ...kinds });
   }
 
-  /** @param {'x' | 'y'} axis */
+  /**
+   * Gridline positions and labels for one axis over the current view. A category x axis
+   * labels every step-th category (blank text for the rest), a log axis uses `logTicks`,
+   * and a linear axis uses `niceTicks`. Reads `view`, `sx`/`sy` and the plot size, so call
+   * it after the scales are rebuilt.
+   * @param {'x' | 'y'} axis
+   * @returns {{px: number, text: string}[]}  pixel position and label text, in tick order
+   */
   function tickList(axis) {
     const isX = axis === 'x';
     const kind = kinds[axis];
@@ -341,7 +349,15 @@ export function drawScatter(container, input, options = {}) {
   let meanCache = null;
   let dataVersion = 0;
 
-  /** @returns {import('./render-common.js').Scene} */
+  /**
+   * Turns the current data, scales, view and legend state into a pixel-space Scene that either
+   * renderer can draw. Points the scales can't draw (zero or negative on a log axis) and
+   * groups hidden in the legend are left out. The trend line is only built when there are two
+   * or more visible points and the fit is finite.
+   * Side effects: rebuilds `sx`/`sy`, updates the plot size and `statText`, and fills the
+   * fit and mean caches.
+   * @returns {import('./render-common.js').Scene}
+   */
   function buildScene() {
     // Floor keeps a usable data area (240 - 96px of margins = 144px) without
     // overflowing the card on 360px-wide phones, where the plot gets 294px.
@@ -610,7 +626,12 @@ export function drawScatter(container, input, options = {}) {
 
   // ---- Public controls ----------------------------------------------------
 
-  /** @param {RendererKind} kind */
+  /**
+   * Switches between the Canvas and SVG renderers and redraws. Does nothing when the kind
+   * is unchanged. Side effects: hides the tooltip, destroys the old renderer's element and
+   * listeners, and swaps in a new one.
+   * @param {RendererKind} kind
+   */
   function setRenderer(kind) {
     if (kind === rendererKind) return;
     rendererKind = kind;

@@ -113,6 +113,39 @@ export function checkPinnedDependencies(pkg) {
 }
 
 /**
+ * Checks that a change to a package.json dependency list comes with a lockfile change. Edits
+ * that leave `dependencies`, `devDependencies`, `optionalDependencies` and `peerDependencies`
+ * alone (scripts, metadata) need no lockfile update. A base that is missing or not valid JSON
+ * counts as changed. Never throws; an unreadable head reports nothing, because
+ * `checkPinnedDependencies` already needs it parsed.
+ * @param {string | null} baseText  package.json at the merge base; null when it did not exist.
+ * @param {string} headText         package.json at the PR head.
+ * @param {boolean} lockfileChanged Whether package-lock.json is among the changed files.
+ * @returns {Issue[]}               One error, or an empty list.
+ * @example
+ * checkLockfile('{"scripts":{"a":"x"}}', '{"scripts":{}}', false)  // => []
+ * checkLockfile('{}', '{"dependencies":{"a":"1.0.0"}}', false)     // => [{rule: 'lockfile', ...}]
+ */
+export function checkLockfile(baseText, headText, lockfileChanged) {
+  if (lockfileChanged) return [];
+  const sections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
+  /** @param {string | null} text */
+  const dependencyLists = (text) => {
+    try {
+      const pkg = JSON.parse(text ?? '');
+      return JSON.stringify(sections.map((name) => pkg[name] ?? null));
+    } catch {
+      return null;
+    }
+  };
+  const headLists = dependencyLists(headText);
+  if (headLists === null || headLists === dependencyLists(baseText)) return [];
+  return [issue('error', 'lockfile',
+    'package.json dependencies changed but package-lock.json did not; commit the lockfile with it.',
+    'package.json')];
+}
+
+/**
  * Flags files that must never be committed: `node_modules/`, `.DS_Store`, `.idea/` and
  * `result.json`, at any depth. Never throws.
  * @param {string[]} files  Repo-relative paths added or changed in the PR, with `/` separators.

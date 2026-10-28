@@ -62,7 +62,8 @@ Use lower case after the prefix, and keep one change per branch.
 ## 3. Make the change and validate it
 
 - **Code:** a new file in `src/` must start with `// @ts-check` and a `/** */` header ([function-headers.md](templates/function-headers.md)). CI fails without them.
-- **Docs:** when you change behaviour, commands or file formats, update `README.md` or a page in `docs/` ([documentation.md](templates/documentation.md)) in the same PR.
+- **Docs:** when you change behaviour, commands or file formats, update `README.md` or a page in `docs/` ([documentation.md](templates/documentation.md)) in the same PR. The pages are indexed in [docs/README.md](docs/README.md).
+- **Contribution record:** add your work to your page in `docs/contributions/`, using [contribution-record.md](templates/contribution-record.md) for a new one. Each row needs a commit and a test as evidence.
 - **Commits:** follow [commit-message.txt](templates/commit-message.txt): an imperative subject, then why, what and how it was tested.
 
 Before pushing, run the same checks as CI:
@@ -71,15 +72,15 @@ Before pushing, run the same checks as CI:
 npm test
 npm run check:stats
 npm run typecheck
-node scripts/ci/lint-changed.mjs origin/development
+npm run lint
 npm run check:hygiene -- --base origin/development --head HEAD --branch "$(git branch --show-current)"
 ```
 
-`lint-changed.mjs` lints only the JavaScript you changed. `npm run lint` lints the whole tree, which still has older violations ([docs/ci.md](docs/ci.md#decisions)).
+`npm run lint` lints the whole tree and allows no warnings ([docs/ci.md](docs/ci.md#decisions)).
 
 **Browser check:** run `npm start`, load each example and upload a CSV pair. Check Canvas and SVG, light and dark, and a narrow width (under 600 px) as well as desktop.
 
-> **Pending:** [#29](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/pull/29) adds browser tests: `npm run test:e2e` (Cypress) locally, and an **End-to-end (Cypress)** job in CI.
+**Browser tests:** `npm run test:e2e` runs the Cypress specs in `cypress/e2e/` against `npm start`. CI runs them in the **End-to-end (Cypress)** job, and a failure also stops the deploy.
 
 ## 4. Open a focused pull request into `development`
 
@@ -90,7 +91,7 @@ npm run check:hygiene -- --base origin/development --head HEAD --branch "$(git b
   - **Screenshots**, before and after, for any visible change.
 - Give the PR a title in the commit-subject style. A squash merge uses it as the commit message.
 
-> **Today:** CI runs on every pull request, whatever its base: **Tests**, **Type check**, **Lint changed files** and **Hygiene**. Errors fail the run. Warnings, such as a missing Summary or How to test, are only annotations. See [docs/ci.md](docs/ci.md).
+> **Today:** CI runs on every pull request, whatever its base: **Tests**, **Type check**, **Lint**, **End-to-end (Cypress)** and **Hygiene**. Errors fail the run. Warnings, such as a missing Summary or How to test, are only annotations. See [docs/ci.md](docs/ci.md).
 
 ## 5. Review
 
@@ -169,5 +170,5 @@ Fix lint locally, then commit the result yourself:
 
 ```sh
 npx eslint --fix path/to/changed-file.js
-node scripts/ci/lint-changed.mjs origin/development
+npm run lint
 ```

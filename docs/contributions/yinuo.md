@@ -2,12 +2,12 @@
 
 This page records Yinuo's review, implementation and documentation work with commit
 evidence, and says which code in the same files came from other contributors. Read it
-alongside the [PR #5 goal list](pr5-review-fixes.md), which has the full decisions.
+alongside the [PR #5 goal list](../pr5-review-fixes.md), which has the full decisions.
 
 **Applies to:** `main` through PR #5 and the post-revert repair, plus Yinuo's portion of
-#23 (#32) · **Files:** [main.js](../src/main.js), [model.js](../src/model.js),
-[export-name.js](../src/export-name.js), [chart.js](../src/chart.js),
-[styles.css](../styles.css) · **Related:** #4, #5, #23, #30, #32
+#23 (#32) · **Files:** [main.js](../../src/main.js), [model.js](../../src/model.js),
+[export-name.js](../../src/export-name.js), [chart.js](../../src/chart.js),
+[styles.css](../../styles.css) · **Related:** #4, #5, #23, #30, #32
 
 ## Overview
 
@@ -78,5 +78,5 @@ merges, since `model.js` and `export-name.js` are #30's files.
 ## Testing
 
 Each commit message in the tables above states its `npm test` result at the time. This
-documentation changes no behavior: run `npm test`, `npm run typecheck` and changed-file
-ESLint before submitting.
+documentation changes no behavior: run `npm test`, `npm run typecheck` and `npm run lint`
+before submitting.

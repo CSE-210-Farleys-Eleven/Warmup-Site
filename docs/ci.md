@@ -2,7 +2,7 @@
 
 How GitHub Actions checks pull requests and gates deployment, and which rule from the templates each check enforces.
 
-**Applies to:** `main` · **Files:** [ci.yml](../.github/workflows/ci.yml), [deploy.yml](../.github/workflows/deploy.yml), [scripts/ci/](../scripts/ci/) · **Related:** [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
+**Applies to:** `main` · **Files:** [ci.yml](../.github/workflows/ci.yml), [deploy.yml](../.github/workflows/deploy.yml), [scripts/ci/](../scripts/ci/) · **Related:** [hygiene-checks.md](hygiene-checks.md), [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
 
 ## Overview
 
@@ -14,7 +14,7 @@ How GitHub Actions checks pull requests and gates deployment, and which rule fro
 | --- | --- | --- | --- |
 | Tests | `npm ci --ignore-scripts`, `npm test`, `npm run check:stats` on Node 24 | Test suite and stats sanity check | Yes |
 | Type check | `npm run typecheck` | Files that start with `// @ts-check` (see [tsconfig.json](../tsconfig.json)) | Yes |
-| Lint changed files | `scripts/ci/lint-changed.mjs` | ESLint on JavaScript changed in the PR: `var`, `prefer-const`, unused variables, `console`, `debugger`, single quotes, semicolons, 2-space indent, final newline | Yes |
+| Lint | `npm run lint` | ESLint on the whole tree, with no warnings allowed: `var`, `prefer-const`, unused variables, `console`, `debugger`, single quotes, semicolons, 2-space indent, final newline | Yes |
 | End-to-end (Cypress) | `cypress-io/github-action` starts `npm start` and runs `cypress/e2e/*.cy.js` in headless Chrome | Loading an example, the three charts, Canvas/SVG switch, data table and filter | Yes |
 | Hygiene (PRs only) | `scripts/ci/check-hygiene.mjs` | See below | Errors only |
 
@@ -24,7 +24,7 @@ Hygiene rules:
 | --- | --- | --- |
 | `forbidden-file`: `node_modules/`, `.DS_Store`, `.idea/`, `result.json` added | Error | Checklist, Repository |
 | `pinned-deps`: a dependency with `^`, `~` or a range | Error | Checklist, Repository |
-| `lockfile`: `package.json` changed without `package-lock.json` | Error | Checklist, Repository |
+| `lockfile`: a `package.json` dependency list changed without `package-lock.json` (scripts and metadata edits are fine) | Error | Checklist, Repository |
 | `file-header`: new `src/` file lacks `// @ts-check` or a `/** */` header | Error | [function-headers.md](../templates/function-headers.md) |
 | `secret`: an added line looks like a token or private key | Error | Checklist, Code |
 | `line-length`: an added line is over 100 characters | Warning | Checklist, Formatting |
@@ -35,7 +35,7 @@ Hygiene rules:
 
 ## Decisions
 
-- **Only changed files are linted.** Some older files still have style violations; linting the whole tree would fail PRs on code they did not touch. `npm run lint` lints everything for local cleanup.
+- **The whole tree is linted.** The old violations were fixed in #30 and #33 (issue #24), so CI no longer needs to lint only the files a PR changed. `src/vendor/` and `demo/` are ignored in `eslint.config.mjs`.
 - **Wording checks only warn.** A reasonable commit should not block a merge. The subject limit warns past 100 characters, not 72, because the repo's own PR #5 commits run to about 95.
 - **Bots skip wording checks.** Bot actors (names ending in `[bot]`) get the safety checks (files, pins, secrets, headers) but not branch, commit or PR-body wording. Dependabot, Copilot and `revert-*` branch names are exempt from the branch rule.
 - **`tsc` is not strict.** The existing `@ts-check` files do not pass `strict` mode (implicit `any`, nullable fields), so [tsconfig.json](../tsconfig.json) sets `strict: false`. Raise it as those files are cleaned up.
@@ -61,8 +61,9 @@ npm run typecheck
 npm run check:hygiene -- --base origin/main --head HEAD --branch "$(git branch --show-current)"
 ```
 
+[test/docs-links.test.mjs](../test/docs-links.test.mjs) fails when a relative link in the README, CONTRIBUTING.md or `docs/` points at a file that does not exist.
+
 ## Follow-ups
 
-- [ ] Add a branch ruleset on `main` that requires the Tests, Type check and Lint changed files checks, and a pull request.
-- [ ] Fix the existing lint violations (`npm run lint`) and then lint the whole tree in CI.
+- [ ] Add a branch ruleset on `main` that requires the Tests, Type check, Lint, End-to-end (Cypress) and Hygiene checks, and a pull request.
 - [ ] Turn on `strict` type checking once the `@ts-check` files allow it.

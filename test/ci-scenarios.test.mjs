@@ -151,6 +151,11 @@ test('changing package.json without the lockfile fails', () => {
     { status: 1, errors: ['lockfile'] });
 });
 
+test('changing only package.json scripts needs no lockfile change', () => {
+  const pkg = JSON.stringify({ name: 'demo', private: true, scripts: { lint: 'eslint .' }, dependencies: { papaparse: '5.7.0' } }, null, 2) + '\n';
+  expectRun(run({ commits: [{ message: 'Add a lint script', files: { 'package.json': pkg } }] }), {});
+});
+
 test('an apparent token in added lines fails', () => {
   const token = `ghp_${'a'.repeat(36)}`;
   expectRun(run({ commits: [{ message: 'Add notes', files: { 'docs/n.md': `key: ${token}\n` } }] }),

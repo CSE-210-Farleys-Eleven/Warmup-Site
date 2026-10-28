@@ -71,7 +71,11 @@ export function pearson(points) {
  *            r_squared?: number, p_value?: number, [extra: string]: number | null | undefined}} StatsResult
  */
 
-/** @type {(points: XY[]) => StatsResult} */
+/**
+ * The default statistics provider: least-squares fit and Pearson r. Fields are NaN when
+ * the fit is undefined (see `linearFit` and `pearson`). Never throws.
+ * @type {(points: XY[]) => StatsResult}
+ */
 function builtinProvider(points) {
   const { slope, intercept } = linearFit(points);
   const r = pearson(points);
