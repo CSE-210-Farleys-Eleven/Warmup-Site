@@ -1,8 +1,76 @@
-/** PNG and SVG exports of the current chart view, including its title and visible legend. */
+// @ts-check
+/**
+ * PNG and SVG exports of the current chart view, including its title and visible legend.
+ *
+ * Runs on the main thread and needs the DOM: it reads the live chart's drawing
+ * (a <canvas> or <svg> inside `.scatter-plot`), its <h2> title and its legend items.
+ * Only `imageFileName` and `imageScale` are pure and can be tested without a DOM.
+ * Exports never include page controls or the data table, and the PNG is capped at
+ * 4096 px per side and 16 million pixels.
+ */
+
+/**
+ * Text shown on hover for each drawn point and mean marker, in drawing order.
+ * Created by the chart's `exportTooltips()` in chart.js.
+ * @typedef {Object} ExportTooltips
+ * @property {string[]} points   one tooltip per `.point` shape
+ * @property {string[]} means    one tooltip per `.mean` shape
+ */
+
+/**
+ * One legend entry laid out for an export, in CSS px from the image's top-left corner.
+ * @typedef {Object} LegendEntry
+ * @property {number} x
+ * @property {number} y                 text baseline
+ * @property {string} text
+ * @property {string | null | undefined} path   SVG path `d` of the marker, if it has one
+ * @property {boolean} line             true for line markers (series and trend lines)
+ * @property {boolean} dashed           true for the dashed trend-line marker
+ * @property {string} color             marker color
+ */
+
+/**
+ * Title, legend and caption layout shared by the PNG and SVG exports.
+ * @typedef {Object} ExportHeader
+ * @property {string} font          CSS font family of the chart card
+ * @property {string} color         text color
+ * @property {string} background    background color for the whole image
+ * @property {string} title
+ * @property {LegendEntry[]} entries
+ * @property {string} caption       export note and legend page, '' when neither applies
+ * @property {number} header        height in px of the area above the plot
+ * @property {number} padding       outer padding in px
+ */
+
+/**
+ * Safe file name for a downloaded chart, built from the chart title.
+ * Runs of characters other than a-z and 0-9 become one '-'; the name is at most
+ * 100 characters before the extension. Falls back to 'chart' for an empty title or
+ * one with no letters or digits. Never throws.
+ * @param {string | null | undefined} title   chart title
+ * @param {string} [extension='png']          file extension without the dot
+ * @returns {string}
+ * @example
+ * imageFileName('Steps / Sleep')         // => 'Steps-Sleep.png'
+ * imageFileName('Steps / Sleep', 'svg')  // => 'Steps-Sleep.svg'
+ * imageFileName('../')                   // => 'chart.png'
+ */
 export function imageFileName(title, extension = 'png') {
   return `${String(title || 'chart').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 100) || 'chart'}.${extension}`;
 }
 
+/**
+ * Pixel ratio for a PNG export: the requested ratio, kept between 1 and 2 and reduced
+ * so the image stays within 4096 px per side and 16 million pixels.
+ * Throws when width or height is not a positive finite number (no visible chart).
+ * @param {number} width          chart width in CSS px
+ * @param {number} height         chart height in CSS px, including the header
+ * @param {number} [ratio=2]      wanted device pixel ratio
+ * @returns {number}              pixels per CSS px, at most 2
+ * @example
+ * imageScale(800, 600, 3)  // => 2
+ * imageScale(3000, 2000)   // => 1.3653333333333333 (capped by the 4096 px width)
+ */
 export function imageScale(width, height, ratio = 2) {
   if (!(Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0)) throw new Error('The chart has no visible drawing area.');
   return Math.min(Math.max(1, ratio), 2, 4096 / width, 4096 / height, Math.sqrt(16_000_000 / (width * height)));
@@ -10,10 +78,15 @@ export function imageScale(width, height, ratio = 2) {
 
 // The live chart is styled by styles.css, which a saved file won't have, so copy the
 // computed styles onto a clone. Used by both the PNG (via an <img>) and the SVG export.
+/**
+ * Clone of an SVG chart with its computed styles inlined and hover rings removed.
+ * @param {SVGSVGElement} svg   the live chart drawing; not modified
+ * @returns {SVGSVGElement}     a detached copy
+ */
 function styledCopy(svg) {
-  const copy = svg.cloneNode(true);
+  const copy = /** @type {SVGSVGElement} */ (svg.cloneNode(true));
   const originals = [svg, ...svg.querySelectorAll('*')];
-  const copies = [copy, ...copy.querySelectorAll('*')];
+  const copies = /** @type {SVGElement[]} */ ([copy, ...copy.querySelectorAll('*')]);
   const properties = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity', 'font-family', 'font-size', 'font-weight', 'paint-order', 'text-anchor'];
   originals.forEach((element, index) => {
     const style = getComputedStyle(element);
@@ -24,6 +97,12 @@ function styledCopy(svg) {
   return copy;
 }
 
+/**
+ * Loads a styled copy of an SVG chart as an image, so it can be drawn onto a canvas.
+ * Rejects if the browser cannot decode the SVG.
+ * @param {SVGSVGElement} svg
+ * @returns {Promise<HTMLImageElement>}
+ */
 async function svgImage(svg) {
   const copy = styledCopy(svg);
   const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], { type: 'image/svg+xml;charset=utf-8' }));
@@ -34,14 +113,30 @@ async function svgImage(svg) {
   } finally { URL.revokeObjectURL(url); }
 }
 
+/**
+ * Finds the chart's drawing and its size on screen.
+ * Throws if the chart has not been drawn yet.
+ * @param {HTMLElement} container   chart card
+ * @returns {{drawing: HTMLCanvasElement | SVGSVGElement, width: number, plotHeight: number}}
+ *   sizes in CSS px, rounded
+ */
 function chartDrawing(container) {
-  const drawing = container.querySelector('.scatter-plot > canvas, .scatter-plot > svg');
+  const drawing = /** @type {HTMLCanvasElement | SVGSVGElement | null} */ (
+    container.querySelector('.scatter-plot > canvas, .scatter-plot > svg'));
   if (!drawing) throw new Error('Load chart data before exporting an image.');
   const rect = drawing.getBoundingClientRect();
   return { drawing, width: Math.round(rect.width), plotHeight: Math.round(rect.height) };
 }
 
 // Title, visible legend entries and caption, positioned once so PNG and SVG exports match.
+/**
+ * Lays out the export header: title, the legend entries that are switched on, and a
+ * caption with the export note and legend page. Legend rows wrap to fit `width`.
+ * Throws if the browser has no 2D canvas (needed to measure text).
+ * @param {HTMLElement} container   chart card
+ * @param {number} width            image width in CSS px
+ * @returns {ExportHeader}
+ */
 function exportHeader(container, width) {
   const surface = getComputedStyle(container);
   const font = surface.fontFamily || 'sans-serif';
@@ -72,6 +167,15 @@ function exportHeader(container, width) {
   return { font, color, background, title, entries, caption, header, padding };
 }
 
+/**
+ * PNG of the chart as it is on screen (current zoom and renderer), with the title,
+ * visible legend and caption above the plot, on the theme's background color.
+ * Works for both the Canvas and the SVG renderer.
+ * Rejects when the chart has not been drawn, has no visible area, or the browser
+ * cannot create the image.
+ * @param {HTMLElement} container   chart card
+ * @returns {Promise<Blob>}         'image/png'
+ */
 export async function chartPng(container) {
   const { drawing, width, plotHeight } = chartDrawing(container);
   const { font, color, background, title, entries, caption, header, padding } = exportHeader(container, width);
@@ -95,12 +199,23 @@ export async function chartPng(container) {
     ctx.fillStyle = color; ctx.fillText(entry.text, entry.x + 15, entry.y, Math.max(1, width - entry.x - padding - 15));
   }
   if (caption) { ctx.fillStyle = color; ctx.font = `11px ${font}`; ctx.fillText(caption, padding, header - 8, Math.max(1, width - padding * 2)); }
-  const image = drawing.tagName.toLowerCase() === 'canvas' ? drawing : await svgImage(drawing);
+  // tagName narrows the type at run time; the casts tell @ts-check the same thing.
+  const image = drawing.tagName.toLowerCase() === 'canvas'
+    ? /** @type {HTMLCanvasElement} */ (drawing)
+    : await svgImage(/** @type {SVGSVGElement} */ (drawing));
   ctx.drawImage(image, 0, header, width, plotHeight);
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('The chart image could not be created.')), 'image/png'));
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * Creates an SVG element with the given attributes and appends it to `parent` if given.
+ * @param {string} tag
+ * @param {Record<string, string | number>} attrs   values are converted to strings
+ * @param {Element} [parent]
+ * @returns {SVGElement}
+ */
 function svgNode(tag, attrs, parent) {
   const node = document.createElementNS(SVG_NS, tag);
   for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
@@ -108,7 +223,16 @@ function svgNode(tag, attrs, parent) {
   return node;
 }
 
-/** A standalone vector file of the chart. Only possible when the chart is drawn with the SVG renderer. */
+/**
+ * A standalone vector file of the chart, with the same title, legend and caption
+ * layout as the PNG. Points and means keep their tooltip text as SVG <title>
+ * elements, so browsers show it on hover without any script.
+ * Only possible when the chart is drawn with the SVG renderer: throws for the Canvas
+ * renderer, and when the chart has not been drawn.
+ * @param {HTMLElement} container                     chart card
+ * @param {() => (ExportTooltips | null)} [tooltips]  hover text for points and means
+ * @returns {Blob}                                    'image/svg+xml'
+ */
 export function chartSvg(container, tooltips) {
   const { drawing, width, plotHeight } = chartDrawing(container);
   if (drawing.tagName.toLowerCase() !== 'svg') throw new Error('switch this chart to SVG first. Canvas charts can only be saved as PNG.');
@@ -126,7 +250,7 @@ export function chartSvg(container, tooltips) {
     svgNode('text', { x: entry.x + 15, y: entry.y, fill: color, 'font-size': 12 }, root).textContent = entry.text;
   }
   if (caption) svgNode('text', { x: padding, y: header - 8, fill: color, 'font-size': 11 }, root).textContent = caption;
-  const plot = styledCopy(drawing);
+  const plot = styledCopy(/** @type {SVGSVGElement} */ (drawing)); // checked above
   plot.removeAttribute('xmlns'); // createElementNS already gives it the namespace; a second copy breaks strict XML parsers
   plot.setAttribute('x', '0'); plot.setAttribute('y', String(header));
   plot.setAttribute('width', String(width)); plot.setAttribute('height', String(plotHeight));
@@ -137,6 +261,13 @@ export function chartSvg(container, tooltips) {
 
 // Browsers show an SVG <title> on hover, so the saved file keeps the chart's tooltips
 // without any script. The live chart doesn't get these, or it would show two tooltips.
+/**
+ * Adds a <title> to each `.point` and `.mean` shape in an exported plot.
+ * Does nothing without tooltips; shapes with no matching text are skipped.
+ * Side effects: changes `plot`, which must be a copy, not the live chart.
+ * @param {Element} plot
+ * @param {ExportTooltips | null | undefined} tooltips
+ */
 function addHoverText(plot, tooltips) {
   if (!tooltips) return;
   const attach = (selector, texts) => plot.querySelectorAll(selector).forEach((shape, i) => {
@@ -149,6 +280,12 @@ function addHoverText(plot, tooltips) {
   attach('.mean', tooltips.means);
 }
 
+/**
+ * Starts a browser download of `blob`.
+ * Side effects: adds and clicks a temporary link, and revokes its object URL after 1 s.
+ * @param {Blob} blob
+ * @param {string} fileName
+ */
 function downloadBlob(blob, fileName) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a'); link.href = url; link.download = fileName;
@@ -156,6 +293,16 @@ function downloadBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Adds the Copy image, Save PNG and Save SVG buttons and a status message to a chart.
+ * Failures are shown in the status message, never thrown. Copy image is disabled when
+ * the browser has no image clipboard (it needs HTTPS or localhost and ClipboardItem).
+ * Side effects: appends the buttons to `container`; status messages clear after 4 s.
+ * @param {HTMLElement} container   chart card
+ * @param {{tooltips?: () => (ExportTooltips | null)}} [options]
+ *   `tooltips` supplies hover text for Save SVG
+ * @returns {() => void}            removes the buttons and stops the message timer
+ */
 export function addImageActions(container, { tooltips } = {}) {
   const actions = document.createElement('div'); actions.className = 'chart-image-actions';
   const status = document.createElement('span'); status.className = 'chart-image-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
