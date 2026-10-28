@@ -1,3 +1,11 @@
+/**
+ * CSV reading
+ *
+ * One file in that leads to one list of [x, y] points per group out, plus plain-English warnings
+ * about anything skipped or combined. Groups are matched by nameKey(), so "Jay" and
+ * "jay" are one line. Record numbers count the header as 1, matching spreadsheet rows.
+ */
+
 import Papa from './vendor/papa.js';
 
 const numericPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
@@ -19,16 +27,12 @@ export function nameKey(name) {
 }
 
 /**
- * Read a header-based CSV without guessing types or changing cell contents.
- * Column names are trimmed and must be nonempty and unique (case-sensitive).
- * Rows contain strings in column order, allowing a UI to offer column selectors.
- * Changes: Now also returns rowNumbers, where rowNumbers[i] is the row in the file
- * that rows[i] came from (the header is row 1). Skipped rows make array
- * positions drift from the file's row numbers, so warnings need this to
- * point at the right row.
+ * Split CSV text into column names and raw string rows, without guessing types.
+ * Column names must be nonempty and unique, or the whole file is rejected (empty result).
+ * Blank lines are dropped; unreadable rows and rows with the wrong field count are
+ * dropped with a warning.
  * @param {string} text
- * @param {string} text
- * @returns {{columns: string[], rows: string[][], rowNumbers: number[], warnings: string[]}}
+ * @returns {ParsedCsv}
  */
 export function parseCsv(text) {
   const warnings = [];
@@ -48,6 +52,7 @@ export function parseCsv(text) {
     return empty();
   }
   const rows = [];
+  // Kept in step with rows, because dropped rows make positions drift from file rows.
   const rowNumbers = [];
   data.slice(1).forEach((fields, index) => {
     if (invalidRows.has(index + 1) || fields.every(value => !value.trim())) return;
@@ -56,44 +61,36 @@ export function parseCsv(text) {
       return;
     }
     rows.push(fields);
-    rowNumbers.push(index + 2);
+    rowNumbers.push(index + 2); // +1 for the header, +1 because index starts at 0
   });
   return { columns, rows, rowNumbers, warnings };
 }
 
 /**
- * The first header describes the value semantics (e.g. steps), the first column holds
- * groups (e.g. person), and remaining headers are X values (e.g. weekday).
- * Y is numeric; X type is selected by the caller. Group labels preserve case and are trimmed.
- * Series are sorted by group name and their points by X for line chart renderers.
- * Each series owns its group label; its points are [x, y] arrays.
- * valueHeader preserves the top-left header. Categorical X text is preserved
- * in xTickLabels. Repeated group rows are combined without aggregation.
- * Returns warnings rather than throwing for invalid CSV or column selections.
- * 
- * Changes: repeated groups: rows whose labels match after nameKey() (e.g.
- * "Jay", "jay") are combined into one series, labelled with the first
- * spelling. If two rows give a value for the same column, the first is kept
- * and the rest are ignored. Both cases produce a warning.
- *
- * New, empty rows: a row with a label but no data in any column is left out
- * and reported by name, unless the same label has data in another row.
+ * Chart data for one CSV file: parseCsv followed by buildFromParsed.
  * @param {string} text
- * @param {{xColumns?: string[],
- *   xType?: 'number' | 'category'}} [options]
- * @returns {{series: {group: string, points: [number, number][]}[],
- *   valueHeader: string | null, xType: 'number' | 'category',
- *   xTickLabels?: row<number, string>, warnings: string[]}}
+ * @param {PlotOptions} [options]
+ * @returns {PlotData}
  */
 export function buildPlotData(text, options) {
   return buildFromParsed(parseCsv(text), options);
 }
 
 /**
- * buildPlotData for a CSV that is already parsed (the worker streams files
- * with Papa and passes the rows here). Same options and result.
- * @param {{columns: string[], rows: string[][], rowNumbers: number[], warnings: string[]}} parsed
- * @param {{xColumns?: string[], xType?: 'number' | 'category'}} [options]
+ * Chart data from parseCsv output.
+ *
+ * Expects one row per group and one column per category: the top-left cell names the
+ * values (becomes valueHeader), the first column holds group labels, and the other
+ * headers become x positions 0, 1, 2… with their names in xTickLabels.
+ * Rows whose labels match by nameKey() ("Jay", "jay") become one, labelled with
+ * the first spelling; if they both have a value for a column, the first is kept.
+ * Blank or non-numeric cells are skipped rather than drawn as zero, and rows with a
+ * label but no values are left out. Every skip or merge is described in warnings;
+ * a rejected header gives no series and one warning also it never throws.
+ * Adds to parsed.warnings, so call parseCsv again rather than reusing its result.
+ * @param {ParsedCsv} parsed
+ * @param {PlotOptions} [options]  which columns to plot (default: all but the first)
+ * @returns {PlotData}             series sorted by label, points sorted by x
  */
 export function buildFromParsed(parsed, options) {
   const { columns, rows, rowNumbers, warnings } = parsed;
@@ -122,6 +119,8 @@ export function buildFromParsed(parsed, options) {
     if (xType === 'category') result.xTickLabels[x] = header;
     axes.push({ column: columns.indexOf(header), x, header});
   });
+
+  // Keyed by nameKey(), not the label, so differently spelled rows share an entry.
   const groups = new Map();
 
   // Rows that have a name but no numbers at all
@@ -137,6 +136,7 @@ export function buildFromParsed(parsed, options) {
     const row = rowNumbers[rowIndex];
     const key = nameKey(label);
 
+    // Checka once per row, so a nameless row is reported once.
     if (!key) {
       skip('noLabel', `row ${row}`);
       continue;
@@ -167,6 +167,7 @@ export function buildFromParsed(parsed, options) {
       entry.spellings.add(label);
       entry.rows.add(row);
 
+      // One value per column
       const kept = entry.values.get(x);
       if (kept) {
         kept.ignored.push({ y, row });
@@ -216,6 +217,7 @@ export function buildFromParsed(parsed, options) {
   capped(combined, 'name combined from several rows', 'names combined from several rows');
   capped(conflicts, 'column with more than one value', 'columns with more than one value');
 
+  // Only missing if no row with the same key had values.
   const missing = [...new Set(emptyRows.filter(r => !groups.has(r.key)).map(r => r.label))];
   if (missing.length) {
     warnings.push(`${missing.length} ${missing.length === 1 ? 'row has' : 'rows have'} ` +
@@ -242,7 +244,7 @@ export function buildFromParsed(parsed, options) {
     warnings.push(`${blank.length} blank ${plural(blank.length, 'cell', 'cells')} ` +
       `skipped: ${list(blank)}.`);
   }
-  // ex 2 cells skipped because they aren't a number: name (header: "n/a"), ...
+  // ex: 2 cells skipped because they aren't a number: name (header: "n/a"), ...
   const notNumber = skipped.get('notNumber') ?? [];
   if (notNumber.length) {
     warnings.push(`${notNumber.length} ${plural(notNumber.length, 'cell', 'cells')} ` +
