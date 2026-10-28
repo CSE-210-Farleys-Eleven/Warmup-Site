@@ -54,6 +54,12 @@ other contributors; the restore commits only put it back.
 - Removed the unused `lastHidden` in `chart.js`, the one #24 lint error that #30
   does not fix.
 
+## Team process (#40)
+
+| Change | Commit |
+| --- | --- |
+| Code review template for reviewers: a checklist of what must be true, what to do by hand or with AI, what is strongly recommended and what never to do, plus comment labels and a review summary. Linked from AGENTS.md, CONTRIBUTING.md and the docs index | `952cb9b`, `45c66fa` |
+
 ## Collaboration and attribution
 
 - The modules these changes live in (`model.js`, `main.js`, the table, CSV export,

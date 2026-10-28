@@ -18,6 +18,7 @@ Rules for any AI agent (Claude, Copilot, Cursor, Codex or other) that edits this
 | add or change a docs page | [templates/documentation.md](templates/documentation.md): every example run and its real output pasted |
 | record someone's work | [templates/contribution-record.md](templates/contribution-record.md), in `docs/contributions/`: each row needs a commit and a test as evidence |
 | review your own diff | [templates/code-hygiene-checklist.md](templates/code-hygiene-checklist.md) |
+| review someone else's pull request | [templates/code-review.md](templates/code-review.md): what must be true, what to do by hand or with AI, what never to do, comment labels and the review summary |
 
 ## Code rules
 

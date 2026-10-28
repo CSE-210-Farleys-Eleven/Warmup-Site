@@ -32,7 +32,7 @@ One page per contributor, with commit and test evidence and credit for other peo
 | [Ekansh](contributions/ekansh.md) | Canvas and SVG renderers, log scale, CI and the reference pages for them. |
 | [Noy](contributions/noy.md) | The Canvas/SVG toggle bar, r and n in the legend, category-label thinning and other small UI fixes, and the contributor workflow. |
 | [Poorva](contributions/poorva.md) | Save SVG, export documentation and the Cypress tests. |
-| [Yinuo](contributions/yinuo.md) | The PR #5 review fixes, the repair after the PR #3 revert, and `setScale` documentation. |
+| [Yinuo](contributions/yinuo.md) | The PR #5 review fixes, the repair after the PR #3 revert, `setScale` documentation and the code review template. |
 
 ## Historical notes
 
@@ -47,4 +47,4 @@ These keep the validation results of the pull requests they describe. They are n
 
 - [CONTRIBUTING.md](../CONTRIBUTING.md): branches, checks, reviews, releases and deployment.
 - [AGENTS.md](../AGENTS.md): the same rules written for AI agents, with the commands to run before committing.
-- [templates/](../templates/): function headers, commit messages, pull requests, docs pages, contribution records and the code hygiene checklist.
+- [templates/](../templates/): function headers, commit messages, pull requests, code reviews, docs pages, contribution records and the code hygiene checklist.

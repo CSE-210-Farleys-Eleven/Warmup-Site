@@ -44,7 +44,7 @@ Hygiene rules:
 
 ## Limitations
 
-- Not automatable, so left to review: meaningful names, one-purpose functions, no stale headers, browser checks (light/dark, narrow width).
+- Not automatable, so left to review: meaningful names, one-purpose functions, no stale headers, browser checks (light/dark, narrow width). Reviewers follow [code-review.md](../templates/code-review.md).
 - The imperative-mood check is a heuristic (words ending in `-ed` or `-ing`), with a small allow-list.
 - Warnings do not block a merge. Making a check required is a repository setting (Settings, Rules); see Follow-ups.
 - `npm audit` currently reports advisories in `undici`, pulled in by `jsdom`. This is not checked in CI.
