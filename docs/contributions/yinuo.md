@@ -58,7 +58,7 @@ other contributors; the restore commits only put it back.
 
 | Change | Commit |
 | --- | --- |
-| Code review template for reviewers: a checklist of what CI cannot check, comment labels, when to approve, and a review summary with a "Not checked" line. Linked from AGENTS.md, CONTRIBUTING.md and the docs index | `952cb9b` |
+| Code review template for reviewers: a checklist of what must be true, what to do by hand or with AI, what is strongly recommended and what never to do, plus comment labels and a review summary. Linked from AGENTS.md, CONTRIBUTING.md and the docs index | `952cb9b`, `45c66fa` |
 
 ## Collaboration and attribution
 
