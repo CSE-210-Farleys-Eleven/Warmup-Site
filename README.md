@@ -118,7 +118,11 @@ See [renderer and table implementation notes](docs/renderer-and-tables.md) for d
 | [Data pipeline](docs/data-pipeline.md) | Import/model/table/CSV contracts, messages, error handling and executed examples. |
 | [Chart layout](docs/chart-layout.md) | Per-chart width, native/fallback fullscreen, cleanup and state transfer. |
 | [Anthony contribution record](docs/contributions-anthony.md) | Original implementation evidence, this documentation scope and teammate attribution. |
+| [Scales](docs/scales.md) | Linear/log scales, ticks and extents (`scales.js`), with executed examples. |
+| [Renderers](docs/renderers.md) | The `Scene` contract, the Canvas and SVG renderers, marker shapes, log-scale and renderer switching in `chart.js`, and the stats provider. |
+| [Ekansh contribution record](docs/contributions-ekansh.md) | Canvas/SVG renderers, log scale and CI work with commit evidence and teammate attribution. |
 | [CI](docs/ci.md) | Current checks, repository hygiene and remaining branch-rule work. |
+| [Hygiene check scripts](docs/hygiene-checks.md) | The functions and commands behind the Hygiene and Lint changed files jobs. |
 
 The historical [PR #4 notes](docs/renderer-and-tables.md) and
 [PR #5 review fixes](docs/pr5-review-fixes.md) retain their original validation

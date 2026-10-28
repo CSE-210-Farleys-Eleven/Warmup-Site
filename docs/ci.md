@@ -2,7 +2,7 @@
 
 How GitHub Actions checks pull requests and gates deployment, and which rule from the templates each check enforces.
 
-**Applies to:** `main` · **Files:** [ci.yml](../.github/workflows/ci.yml), [deploy.yml](../.github/workflows/deploy.yml), [scripts/ci/](../scripts/ci/) · **Related:** [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
+**Applies to:** `main` · **Files:** [ci.yml](../.github/workflows/ci.yml), [deploy.yml](../.github/workflows/deploy.yml), [scripts/ci/](../scripts/ci/) · **Related:** [hygiene-checks.md](hygiene-checks.md), [code-hygiene-checklist.md](../templates/code-hygiene-checklist.md)
 
 ## Overview
 
