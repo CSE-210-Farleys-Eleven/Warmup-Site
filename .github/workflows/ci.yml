@@ -92,3 +92,27 @@ jobs:
           node scripts/ci/check-hygiene.mjs
           --base "$BASE_SHA" --head "$HEAD_SHA" --branch "$BRANCH"
           --pr-body-file "$RUNNER_TEMP/pr-body.md" $SKIP_STYLE
+
+  e2e:
+    name: End-to-end (Cypress)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Installs dependencies (with the Cypress binary, cached), starts server.js,
+      # waits for it to answer, then runs every spec in cypress/e2e/ in headless Chrome.
+      - uses: cypress-io/github-action@v7
+        with:
+          start: npm start
+          wait-on: 'http://localhost:3000'
+          browser: chrome
+      - name: Upload screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore

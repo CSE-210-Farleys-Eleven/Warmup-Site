@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import pluginCypress from 'eslint-plugin-cypress';
 
 // Rules mirror templates/code-hygiene-checklist.md. Line length is checked only on
 // added lines by scripts/ci/check-hygiene.mjs, so older long lines don't fail CI.
@@ -27,5 +28,7 @@ export default [
   },
   // CLI entry points print to the terminal on purpose.
   { files: ['src/data.js', 'scripts/**/*.mjs'], rules: { 'no-console': 'off' } },
+  // Cypress specs get the cy/Cypress/mocha globals and the plugin's recommended rules.
+  { files: ['cypress/**/*.js'], ...pluginCypress.configs.recommended },
   { files: ['server.js'], languageOptions: { sourceType: 'commonjs', globals: globals.node } },
 ];

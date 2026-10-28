@@ -22,6 +22,8 @@ npm run check:stats
 
 The test-only jsdom dependency is pinned in the lockfile. The site's runtime dependency on Papa Parse retains the existing version.
 
+To contribute, follow [CONTRIBUTING.md](CONTRIBUTING.md): branches, checks, reviews, releases and deployment.
+
 ## Use
 
 Select both CSV files to load them automatically, or choose an existing example. The page starts without charts. A failed or cancelled replacement keeps the previous successful dataset available.
@@ -38,7 +40,7 @@ Select both CSV files to load them automatically, or choose an existing example.
 | Change chart width | Maximum width: 640, 800, 960, 1200 px or Fit available width |
 | Expand one chart | Fullscreen; Escape or Exit fullscreen to close |
 | Copy a chart image | Copy image at the chart's bottom right |
-| Save a chart image | Adjacent Save PNG button |
+| Save a chart image | Save PNG, or Save SVG for a vector file (SVG renderer only) |
 | Inspect/export values | Show data table; choose source, display, sorting and page size; Export CSV |
 
 The original examples, selected-example styling, sticky renderer toggle, measured category-label spacing, mobile chart sizing, hover, reset and system theme are retained from `ui/renderer-controls`. The duplicate-name example and parser rules from current main are also retained.
@@ -47,7 +49,11 @@ The original examples, selected-example styling, sticky renderer toggle, measure
 
 - Counts, means, medians, sample standard deviations and correlation summarize complete data for the selected visible groups, not just drawn points. Group/category summary tables also show minimum and maximum.
 - Legend visibility belongs to each chart independently. Hiding a group in the first line chart updates that chart's means without hiding it in the second chart or scatter. Scatter exclusions update its fit and correlation. Table and CSV use their selected chart source's exclusions and the shared group filter.
-- A log axis cannot draw zero or negative values. The chart note counts those exclusions; analysis and exports continue to use original values. Regression is ordinary least squares in original units, not a regression of log-transformed values.
+- A log axis cannot draw zero or negative values. The chart note counts those
+  exclusions; worker metric cards, tables and CSV keep the original selected data.
+  An unsampled scatter's displayed fit uses its plottable points and the page's
+  stats provider; a sampled scatter uses the worker's complete selected-data fit.
+  Regression remains ordinary least squares in original units, not log-space.
 - The scatter's r and n stay in its legend rather than covering plotted values. Mean markers and the scatter fit can be configured above the charts.
 - Above 20 visible groups, line charts show labelled category averages. Filter to at most 20 groups to see individual lines. This cap also applies to the Individual groups option.
 - Charts draw at most 3,000 deterministic samples. Sampling preserves drawing responsiveness but does not represent every point or the full distribution density. Notes and PNG captions state the drawn/full counts or averaging scope.
@@ -59,6 +65,8 @@ One initially collapsed table serves all three chart sources. It renders 25, 50 
 Export CSV includes **all pages** of the selected display, filter and visible groups. Summary mode exports summaries; All observations exports cleaned numeric observations. Downloads preserve numeric precision; on-screen values are rounded. Formula-like labels are escaped for spreadsheet use. CSV generation is cancellable.
 
 PNG exports include the current plot/zoom, title, active displayed legend, r/n when enabled, system-theme background and drawing-scope caption. A paged legend is identified as a page; exports do not expand thousands of legend entries. PNG size is capped at 4096 px per dimension and 16 million pixels. Copy image requires a secure context (HTTPS or localhost), ClipboardItem support and clipboard permission. Unsupported copying is disabled; permission/encoding failures appear inline. Save PNG remains a separate action.
+
+Save SVG writes the same title, legend and caption as the PNG, with the plot kept as vector shapes; opened in a browser, points and means show their tooltip text on hover. It needs the SVG renderer. See [chart image export](docs/chart-image-export.md).
 
 ## Input format and limits
 
@@ -89,11 +97,31 @@ Oversized input is rejected explicitly rather than silently truncated. Parsing u
 - `src/data.js`: parser and normalized names; `buildFromParsed` reuses the same cleaning rules for worker chunks.
 - `src/model.js`: full-data matching, per-chart exclusions, summaries, deterministic samples and cached tables.
 - `src/chart.js`, `src/scales.js`, `src/render-*.js`: renderer-neutral interaction, axes and Canvas/SVG drawing.
-- `src/chart-layout.js`, `src/chart-image.js`: width/fullscreen lifecycle and bounded image export.
+- `src/chart-layout.js`, `src/chart-image.js`: width/fullscreen lifecycle and bounded PNG/SVG image export ([docs](docs/chart-image-export.md)).
 - `src/stats.js`: existing fit/provider API plus grouped-statistics API from the grouped-stats branch.
 
 `drawScatter` retains `setRenderer`, `setScale` and `getState`, and adds `destroy` for cleanup. It accepts optional full-data `statsOverride`/`meanPoints`, group/exclusion metadata and an `onVisibilityChange` callback for worker recalculation. Chart state includes view, width and legend search/page so legend changes retain interaction state.
 
-The synchronous `setStatsProvider` extension remains available for direct chart use. The app supplies full-data fit results from the worker; changing the worker's statistics pipeline is required to replace that calculation. A future backend should return complete raw-unit summaries and exclusion counts separately from sampled drawing data; no backend or API service is introduced here.
+The synchronous `setStatsProvider` extension remains available for direct chart
+use and unsampled scatter fits. Sampled scatters receive a full-data worker fit;
+replacing that calculation requires changing the worker's statistics pipeline.
+A future backend should return complete raw-unit summaries and exclusion counts
+separately from sampled drawing data; no backend or API service is introduced here.
 
 See [renderer and table implementation notes](docs/renderer-and-tables.md) for data flow, branch integration and validation limits.
+
+## Contributor documentation
+
+| Read this | For |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Every source module, main/worker boundaries and the Mermaid data-flow diagram. |
+| [Data pipeline](docs/data-pipeline.md) | Import/model/table/CSV contracts, messages, error handling and executed examples. |
+| [Chart layout](docs/chart-layout.md) | Per-chart width, native/fallback fullscreen, cleanup and state transfer. |
+| [Anthony contribution record](docs/contributions-anthony.md) | Original implementation evidence, this documentation scope and teammate attribution. |
+| [CI](docs/ci.md) | Current checks, repository hygiene and remaining branch-rule work. |
+
+The historical [PR #4 notes](docs/renderer-and-tables.md) and
+[PR #5 review fixes](docs/pr5-review-fixes.md) retain their original validation
+results. New contributions follow the [header](templates/function-headers.md),
+[documentation](templates/documentation.md) and
+[PR](templates/pull-request.md) templates.
