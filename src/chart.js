@@ -300,7 +300,6 @@ export function drawScatter(container, input, options = {}) {
   // the plot, so it can't hide data and is the same text in both renderers.
   let statText = '';
   /** @type {HTMLSpanElement | null} */ let trendStatEl = null;
-  let lastHidden = -1;
 
   placeMarks();
 
@@ -623,6 +622,10 @@ export function drawScatter(container, input, options = {}) {
   }
 
   /**
+   * Switches one axis between linear and log scale and returns both axes to their home view.
+   * Does nothing when the kind is unchanged, or for x on a category axis (it stays linear).
+   * Side effects: updates that axis's scale select, clears cached means, hides the tooltip,
+   * redraws, and reports points the log axes cannot show through `onHidden`.
    * @param {'x' | 'y'} axis
    * @param {ScaleKind} kind
    */
