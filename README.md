@@ -18,7 +18,11 @@ For the automated tests, use Node 24:
 npm ci --ignore-scripts
 npm test
 npm run check:stats
+npm run typecheck
+npm run lint
 ```
+
+`npm run test:e2e` runs the Cypress browser tests and starts the server itself. `--ignore-scripts` skips the Cypress binary download, so run `npx cypress install` once first.
 
 The test-only jsdom dependency is pinned in the lockfile. The site's runtime dependency on Papa Parse retains the existing version.
 
@@ -110,22 +114,22 @@ separately from sampled drawing data; no backend or API service is introduced he
 
 See [renderer and table implementation notes](docs/renderer-and-tables.md) for data flow, branch integration and validation limits.
 
-## Contributor documentation
+## Repository layout
 
-| Read this | For |
+| Path | Holds |
 | --- | --- |
-| [Architecture](docs/architecture.md) | Every source module, main/worker boundaries and the Mermaid data-flow diagram. |
-| [Data pipeline](docs/data-pipeline.md) | Import/model/table/CSV contracts, messages, error handling and executed examples. |
-| [Chart layout](docs/chart-layout.md) | Per-chart width, native/fallback fullscreen, cleanup and state transfer. |
-| [Anthony contribution record](docs/contributions-anthony.md) | Original implementation evidence, this documentation scope and teammate attribution. |
-| [Scales](docs/scales.md) | Linear/log scales, ticks and extents (`scales.js`), with executed examples. |
-| [Renderers](docs/renderers.md) | The `Scene` contract, the Canvas and SVG renderers, marker shapes, log-scale and renderer switching in `chart.js`, and the stats provider. |
-| [Ekansh contribution record](docs/contributions-ekansh.md) | Canvas/SVG renderers, log scale and CI work with commit evidence and teammate attribution. |
-| [CI](docs/ci.md) | Current checks, repository hygiene and remaining branch-rule work. |
-| [Hygiene check scripts](docs/hygiene-checks.md) | The functions and commands behind the Hygiene and Lint changed files jobs. |
+| `index.html`, `styles.css`, `server.js` | The page, its styles and the static server behind `npm start`. |
+| `src/` | The site's code, described under Code and integration above. `src/vendor/` is Papa Parse. |
+| `data/` | Example CSV files (`data/examples/`), the Steps & sleep pair and parser test cases (`data/testcases/`). |
+| `test/` | Unit and integration tests for `npm test`. |
+| `cypress/` | End-to-end specs for `npm run test:e2e`. |
+| `scripts/` | `check-stats.mjs` and the CI hygiene check in `scripts/ci/`. |
+| `templates/` | The templates every contribution follows: function headers, commit messages, pull requests, docs pages, contribution records and the code hygiene checklist. |
+| `docs/` | Reference pages and contribution records, indexed in [docs/README.md](docs/README.md). |
+| `.github/` | The CI and deploy workflows and the pull request template. |
 
-The historical [PR #4 notes](docs/renderer-and-tables.md) and
-[PR #5 review fixes](docs/pr5-review-fixes.md) retain their original validation
-results. New contributions follow the [header](templates/function-headers.md),
-[documentation](templates/documentation.md) and
-[PR](templates/pull-request.md) templates.
+## Contributing and documentation
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) for branches, checks, reviews and releases, and the [templates](templates/) for how code, commits, pull requests, docs and contribution records should look. CI checks many of these rules automatically ([docs/ci.md](docs/ci.md)).
+
+[docs/README.md](docs/README.md) indexes every documentation page: architecture, the data pipeline, scales and renderers, chart layout and image export, CI, the historical PR notes, and one contribution record per contributor in [docs/contributions/](docs/contributions/).

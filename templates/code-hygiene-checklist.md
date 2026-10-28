@@ -34,5 +34,6 @@ Run through this before opening a PR. Reviewers can use it too.
 - [ ] Commits follow [commit-message.txt](commit-message.txt); one logical change per commit.
 - [ ] PR description follows [pull-request.md](pull-request.md) and targets the right base branch.
 - [ ] Docs in `docs/` follow [documentation.md](documentation.md) and are updated with the code.
+- [ ] Your page in `docs/contributions/` lists this work, following [contribution-record.md](contribution-record.md).
 - [ ] Generated or local files (`node_modules/`, `.DS_Store`, editor settings) are not committed; add them to `.gitignore` if needed.
 - [ ] Dependencies are pinned to exact versions, and the lockfile is committed with any change to `package.json`.

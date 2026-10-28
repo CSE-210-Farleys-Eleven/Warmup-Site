@@ -2,11 +2,11 @@
 
 This page records Poorva's implementation, documentation and testing work with commit
 evidence, and says which code in the same files came from other contributors. Read
-[chart image export](chart-image-export.md) for how the export code works.
+[chart image export](../chart-image-export.md) for how the export code works.
 
-**Applies to:** `main` through PR #29 · **Files:** [chart-image.js](../src/chart-image.js),
-[chart.js](../src/chart.js), [site.cy.js](../cypress/e2e/site.cy.js),
-[ci.yml](../.github/workflows/ci.yml) · **Related:** #12, #22, #23, #27, #28, #29
+**Applies to:** `main` through PR #29 · **Files:** [chart-image.js](../../src/chart-image.js),
+[chart.js](../../src/chart.js), [site.cy.js](../../cypress/e2e/site.cy.js),
+[ci.yml](../../.github/workflows/ci.yml) · **Related:** #12, #22, #23, #27, #28, #29
 
 ## Overview
 
@@ -27,8 +27,8 @@ and opened the issues #17 to #25 and #28 for the team's task list.
 
 | Change | Commit |
 | --- | --- |
-| `// @ts-check`, a file header, typedefs and function headers per [function-headers.md](../templates/function-headers.md) for all of `chart-image.js`; two tests for the empty-title file name fallback | `e803005` |
-| New [chart-image-export.md](chart-image-export.md) page; README now lists Save SVG | `c5a1d07` |
+| `// @ts-check`, a file header, typedefs and function headers per [function-headers.md](../../templates/function-headers.md) for all of `chart-image.js`; two tests for the empty-title file name fallback | `e803005` |
+| New [chart-image-export.md](../chart-image-export.md) page; README now lists Save SVG | `c5a1d07` |
 
 PR #27 closed #22, Poorva's part of #23. Yinuo reviewed and approved it.
 
@@ -58,4 +58,4 @@ PR #29 closed #28. Ekansh reviewed and approved it.
 ## Testing
 
 Each commit message from PR #27 on states its test result. This page changes no
-behavior: run `npm test`, `npm run test:e2e` and changed-file ESLint before submitting.
+behavior: run `npm test`, `npm run test:e2e` and `npm run lint` before submitting.

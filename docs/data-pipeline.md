@@ -6,7 +6,7 @@ scalable inspection. Use it when changing imports, exclusions, tables or CSV exp
 **Applies to:** `main` at `ef757cb`, with the #23 documentation update ·
 **Files:** [`main.js`](../src/main.js), [`pipeline.worker.js`](../src/pipeline.worker.js),
 [`model.js`](../src/model.js), [`export-name.js`](../src/export-name.js) ·
-**Related:** [architecture](architecture.md), [contribution record](contributions-anthony.md)
+**Related:** [architecture](architecture.md), [contribution record](contributions/anthony.md)
 
 ## Overview
 

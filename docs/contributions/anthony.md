@@ -5,8 +5,8 @@ commit evidence. It distinguishes original work from the existing chart/parser
 foundation and subsequent work by other contributors.
 
 **Applies to:** implementation merged through PR #4; documentation prepared for #17
-and Anthony's portion of #23 · **Files:** [module contracts](data-pipeline.md),
-[layout](chart-layout.md), [architecture](architecture.md) ·
+and Anthony's portion of #23 · **Files:** [module contracts](../data-pipeline.md),
+[layout](../chart-layout.md), [architecture](../architecture.md) ·
 **Related:** [PR #4](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/pull/4),
 [#17](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/issues/17),
 [#23](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/issues/23)
@@ -37,7 +37,7 @@ authored by Anthony and submitted as PR #4.
   claiming those algorithms as new work.
 - Later PR #5 sorting/precision/focus/global-width and restoration commits are
   authored by Yinuo Zhou (`enochzhouyz`), a different contributor from Anthony.
-  [`docs/pr5-review-fixes.md`](pr5-review-fixes.md) records that work.
+  [`docs/pr5-review-fixes.md`](../pr5-review-fixes.md) records that work.
 - The current SVG export, tooltip preservation and export-helper refactoring come
   from Poorva's PR #12. Header/export documentation is separately proposed in #27.
 - Repository templates and CI come from the team work merged in PR #26. Cypress
@@ -61,7 +61,7 @@ The worker/view/export behavior and application UI remain unchanged.
 ## Testing
 
 The documented API examples are executed by
-[`test/owned-contracts.test.mjs`](../test/owned-contracts.test.mjs). Run `npm test`,
-`npm run typecheck`, `npm run check:stats`, and changed-file ESLint before submitting.
+[`test/owned-contracts.test.mjs`](../../test/owned-contracts.test.mjs). Run `npm test`,
+`npm run typecheck`, `npm run check:stats`, and `npm run lint` before submitting.
 Historical browser evidence belongs to the original PR pages; this documentation
 update does not claim a fresh native fullscreen/clipboard or Cypress run.

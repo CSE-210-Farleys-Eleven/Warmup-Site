@@ -105,7 +105,7 @@ data-processing backend. `scripts/check-stats.mjs` exercises grouped summaries.
 
 GitHub Pages stages `index.html`, `styles.css`, `src/` and `data/`. Its deploy job
 depends on the reusable CI workflow. Current main runs unit/DOM tests, stats
-checks, opt-in JavaScript type checking and changed-file lint. Hygiene is a PR-only
+checks, opt-in JavaScript type checking and whole-tree lint. Hygiene is a PR-only
 job. As of this base revision, Cypress is proposed in PR #29, not yet part of main.
 See [CI](ci.md) for the authoritative commands and branch-rule limitations.
 
@@ -131,7 +131,7 @@ The [model tests](../test/model.test.js), [worker tests](../test/worker.test.js)
 
 - [Data pipeline and inspection contracts](data-pipeline.md): API, messages and examples.
 - [Chart layout lifecycle](chart-layout.md): width/fullscreen behavior and cleanup.
-- [Contribution record for Anthony](contributions-anthony.md): ownership and commit evidence.
+- [Contribution record for Anthony](contributions/anthony.md): ownership and commit evidence.
 - [Renderer/table notes](renderer-and-tables.md): historical PR #4 design and validation.
 - [PR #5 review fixes](pr5-review-fixes.md): subsequent sorting, precision and layout work.
 - [CI documentation](ci.md): checks and current follow-ups.

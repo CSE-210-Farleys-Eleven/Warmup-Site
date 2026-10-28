@@ -1,8 +1,8 @@
 # Contribution record: Ekansh
 
-This page records Ekansh's implementation, CI, review and documentation work with commit evidence, and says which code in the same files came from other contributors. Read [renderers](renderers.md), [scales](scales.md) and [hygiene checks](hygiene-checks.md) for how that code works.
+This page records Ekansh's implementation, CI, review and documentation work with commit evidence, and says which code in the same files came from other contributors. Read [renderers](../renderers.md), [scales](../scales.md) and [hygiene checks](../hygiene-checks.md) for how that code works.
 
-**Applies to:** `main` through PR #33, plus PR #34 · **Files:** [scales.js](../src/scales.js), [render-common.js](../src/render-common.js), [render-canvas.js](../src/render-canvas.js), [render-svg.js](../src/render-svg.js), [chart.js](../src/chart.js), [stats.js](../src/stats.js), [hygiene-lib.mjs](../scripts/ci/hygiene-lib.mjs), [ci.yml](../.github/workflows/ci.yml) · **Related:** #1, #18, #23, #26, #34
+**Applies to:** `main` through PR #33, plus PR #34 · **Files:** [scales.js](../../src/scales.js), [render-common.js](../../src/render-common.js), [render-canvas.js](../../src/render-canvas.js), [render-svg.js](../../src/render-svg.js), [chart.js](../../src/chart.js), [stats.js](../../src/stats.js), [hygiene-lib.mjs](../../scripts/ci/hygiene-lib.mjs), [ci.yml](../../.github/workflows/ci.yml) · **Related:** #1, #18, #23, #26, #34
 
 ## Overview
 
@@ -36,10 +36,10 @@ PR #26 merged on 2026-10-26 after Poorva's approval. Ekansh also opened the thro
 
 | Change | Commit |
 | --- | --- |
-| Function headers per [function-headers.md](../templates/function-headers.md) for every check in `hygiene-lib.mjs`, with an `Issue` typedef | `d527a09` |
+| Function headers per [function-headers.md](../../templates/function-headers.md) for every check in `hygiene-lib.mjs`, with an `Issue` typedef | `d527a09` |
 | Function headers for all of `scales.js`, `render-common.js`, `render-canvas.js` and `render-svg.js`, with examples that were run | `603883f` |
 | `niceTicks` returns no ticks for an empty range instead of throwing a `RangeError` (it looped on a step of 0); new test | `03e78e9` |
-| Module reference pages [scales.md](scales.md), [renderers.md](renderers.md) and [hygiene-checks.md](hygiene-checks.md); headers for the `chart.js` helpers `reportHidden`, `tickList`, `buildScene`, `setRenderer` and the `builtinProvider` in `stats.js`; direct tests for the SVG renderer (`renderers.test.js`) | this PR |
+| Module reference pages [scales.md](../scales.md), [renderers.md](../renderers.md) and [hygiene-checks.md](../hygiene-checks.md); headers for the `chart.js` helpers `reportHidden`, `tickList`, `buildScene`, `setRenderer` and the `builtinProvider` in `stats.js`; direct tests for the SVG renderer (`renderers.test.js`) | this PR |
 
 ## Reviews
 
@@ -47,14 +47,14 @@ Approved #29 (Cypress tests), #30 (architecture and Anthony's contracts), #31 (c
 
 ## Attribution
 
-- `categoryLabelStep` and its tests are noyfisher-SD's (`739e1c4`); Yinuo restored them after PR #3 was reverted (`4c975c8`). They sit in `scales.js` beside Ekansh's functions and are documented in [scales.md](scales.md).
+- `categoryLabelStep` and its tests are noyfisher-SD's (`739e1c4`); Yinuo restored them after PR #3 was reverted (`4c975c8`). They sit in `scales.js` beside Ekansh's functions and are documented in [scales.md](../scales.md).
 - The Y1 reset of both axes in `setScale` is Yinuo's (`4aa4042`); Ekansh wrote the original `setScale`.
 - Tooltips and export hooks in `chart.js` are Poorva's (`3e4c6de`) and ex188's (`3d82f1b`); grouped statistics in `stats.js` are Sritha's (`61c7ce3`).
 - The templates that the CI rules enforce are Sritha's (`docs/repo-templates`). The Cypress job added to `ci.yml` is Poorva's (PR #29).
 
 ## Follow-ups
 
-- [ ] `niceTicks` can drop the top tick through float rounding; see [scales.md](scales.md).
+- [ ] `niceTicks` can drop the top tick through float rounding; see [scales.md](../scales.md).
 - [ ] `render-canvas.js` has no direct unit test.
 - [ ] Require the CI checks before merging to `main` (#25) and fix the existing lint errors so CI can lint the whole tree (#24).
 
