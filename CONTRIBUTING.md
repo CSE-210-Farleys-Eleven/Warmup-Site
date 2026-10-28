@@ -101,6 +101,7 @@ npm run check:hygiene -- --base origin/development --head HEAD --branch "$(git b
 - No self-merging ([#20](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/issues/20)).
 - All checks passing on the **latest** commit.
 - Every review conversation resolved.
+- Reviewers follow [code-review.md](templates/code-review.md): what to check that CI does not, comment labels, and the review summary.
 
 > **Today:** `main` has no branch protection and no ruleset. GitHub does not require a pull request, approvals or passing checks, and it allows direct pushes. [#25](https://github.com/CSE-210-Farleys-Eleven/Warmup-Site/issues/25) tracks adding the ruleset for `main`.
 

@@ -124,7 +124,7 @@ See [renderer and table implementation notes](docs/renderer-and-tables.md) for d
 | `test/` | Unit and integration tests for `npm test`. |
 | `cypress/` | End-to-end specs for `npm run test:e2e`. |
 | `scripts/` | `check-stats.mjs` and the CI hygiene check in `scripts/ci/`. |
-| `templates/` | The templates every contribution follows: function headers, commit messages, pull requests, docs pages, contribution records and the code hygiene checklist. |
+| `templates/` | The templates every contribution follows: function headers, commit messages, pull requests, code reviews, docs pages, contribution records and the code hygiene checklist. |
 | `docs/` | Reference pages and contribution records, indexed in [docs/README.md](docs/README.md). |
 | `.github/` | The CI and deploy workflows and the pull request template. |
 | `AGENTS.md`, `CLAUDE.md` | Rules for AI agents working in the repo; `CLAUDE.md` and `.github/copilot-instructions.md` point to `AGENTS.md`. |

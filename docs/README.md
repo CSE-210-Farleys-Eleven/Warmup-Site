@@ -47,4 +47,4 @@ These keep the validation results of the pull requests they describe. They are n
 
 - [CONTRIBUTING.md](../CONTRIBUTING.md): branches, checks, reviews, releases and deployment.
 - [AGENTS.md](../AGENTS.md): the same rules written for AI agents, with the commands to run before committing.
-- [templates/](../templates/): function headers, commit messages, pull requests, docs pages, contribution records and the code hygiene checklist.
+- [templates/](../templates/): function headers, commit messages, pull requests, code reviews, docs pages, contribution records and the code hygiene checklist.
