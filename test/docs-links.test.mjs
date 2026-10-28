@@ -5,9 +5,9 @@ import { dirname, join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
-/** Markdown files whose links must resolve: README, CONTRIBUTING and everything under docs/. */
+/** Markdown files whose links must resolve: the root guides and everything under docs/. */
 function markdownFiles() {
-  const out = ['README.md', 'CONTRIBUTING.md'];
+  const out = ['README.md', 'CONTRIBUTING.md', 'AGENTS.md'];
   const walk = (dir) => {
     for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
@@ -19,7 +19,7 @@ function markdownFiles() {
   return out;
 }
 
-test('relative links in README, CONTRIBUTING and docs/ point at files that exist', () => {
+test('relative links in README, CONTRIBUTING, AGENTS and docs/ point at files that exist', () => {
   const broken = [];
   for (const file of markdownFiles()) {
     const text = readFileSync(join(root, file), 'utf8');
