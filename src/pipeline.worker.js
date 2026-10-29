@@ -30,7 +30,9 @@ const cancelledExports = new Set();
  * Mutate the shared cell budget and post progress under the owning load request.
  * Throw immediately for an oversized file; reject for invalid headers, exceeded
  * budgets, read errors or no usable numeric series. No silent truncation occurs.
- * Blank and malformed rows still count toward the scanned-record/cell budgets.
+ * Malformed records count toward the record limit; blank records (every field empty or
+ * whitespace, including the empty record a final newline produces) do not. All records
+ * still count toward the cell budget, so a run of empty lines is bounded by file size.
  * @param {File} file File whose bytes are read with Papa Parse.
  * @param {number} id Load request id.
  * @param {number} index Zero-based position in the pair, used in progress text.
@@ -41,6 +43,7 @@ function parseFile(file, id, index, budget) {
   if (file.size > LIMITS.fileBytes) throw new Error(`${file.name}: exceeds the 5 MiB per-file limit. Choose a smaller file.`);
   return new Promise((resolve, reject) => {
     let record = 0;
+    let dataRecords = 0;
     /** @type {string[] | undefined} */
     let columns;
     let failed = false;
@@ -61,11 +64,15 @@ function parseFile(file, id, index, budget) {
           if (columns.length - 1 > LIMITS.columns) throw new Error(`${file.name}: more than ${LIMITS.columns} value columns. Select fewer columns before importing.`);
           return;
         }
-        if (record > LIMITS.rows + 1) throw new Error(`${file.name}: exceeds ${LIMITS.rows.toLocaleString()} CSV records.`);
+        // Papa reports a final newline as one empty record; blank lines are not data (#43).
+        const blank = fields.every(v => !v.trim());
+        if (!blank && ++dataRecords > LIMITS.rows) {
+          throw new Error(`${file.name}: exceeds ${LIMITS.rows.toLocaleString()} CSV records.`);
+        }
         budget.cells += Math.max(0, fields.length - 1);
         if (budget.cells > LIMITS.cells) throw new Error('The two files exceed the combined 250,000-cell limit. Import a smaller subset. No data was silently truncated.');
         if (result.errors.length) { warn(`CSV record ${record} skipped: ${result.errors[0].message}`); return; }
-        if (fields.every(v => !v.trim())) return;
+        if (blank) return;
         if (fields.length !== columns.length) { warn(`CSV record ${record} skipped: wrong number of fields`); return; }
         rows.push(fields); recordNumbers.push(record);
         if (record % 1000 === 0) self.postMessage({ id, progress: `Reading file ${index + 1} of 2 · ${record.toLocaleString()} records` });

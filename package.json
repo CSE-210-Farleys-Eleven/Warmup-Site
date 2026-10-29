@@ -8,6 +8,8 @@
     "cy:run": "cypress run",
     "lint": "eslint . --max-warnings=0",
     "parse:data": "node src/data.js",
+    "perf:bench": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/perf-bench.mjs",
+    "perf:gen": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/perf-fixtures.mjs",
     "start": "node server.js",
     "test": "node --test test/*.test.js test/*.test.mjs",
     "test:e2e": "start-server-and-test start http://localhost:3000 cy:run",

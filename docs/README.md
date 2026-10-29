@@ -15,6 +15,12 @@ Every page in `docs/`, grouped by what you need it for. Start with [architecture
 | [Chart layout](chart-layout.md) | Per-chart width, fullscreen, cleanup and state transfer. |
 | [Chart image export](chart-image-export.md) | PNG and SVG export, Copy image, file names and limits. |
 
+## Performance
+
+| Page | Covers |
+| --- | --- |
+| [Performance and input-size testing](performance.md) | How the app behaves at and past each input limit: load and interaction times, scaling, before/after the limits, and open findings. |
+
 ## Continuous integration
 
 | Page | Covers |

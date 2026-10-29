@@ -24,6 +24,8 @@ npm run lint
 
 `npm run test:e2e` runs the Cypress browser tests and starts the server itself. `--ignore-scripts` skips the Cypress binary download, so run `npx cypress install` once first.
 
+`npm run perf:gen` writes the performance test files to `data/stress/limits/` (gitignored), and `npm run perf:bench` times the worker on them. Neither runs in CI; see [docs/performance.md](docs/performance.md).
+
 The test-only jsdom dependency is pinned in the lockfile. The site's runtime dependency on Papa Parse retains the existing version.
 
 To contribute, follow [CONTRIBUTING.md](CONTRIBUTING.md): branches, checks, reviews, releases and deployment.
@@ -92,7 +94,7 @@ The top-left header names the measurement; the first column names each group; re
 | Individual line groups | 20 |
 | Table rows in the DOM | At most 100 |
 
-Oversized input is rejected explicitly rather than silently truncated. Parsing uses 256 KiB chunks; import cancellation terminates the candidate worker. Table caches, warnings, drawing payloads and legend controls are bounded. Chart replacement releases observers, theme and resize listeners. These budgets reduce resource pressure; they do not guarantee performance on every browser/device.
+Oversized input is rejected explicitly rather than silently truncated. Parsing uses 256 KiB chunks; import cancellation terminates the candidate worker. Table caches, warnings, drawing payloads and legend controls are bounded. Chart replacement releases observers, theme and resize listeners. These budgets reduce resource pressure; they do not guarantee performance on every browser/device. Measured load and interaction times at each limit are in [docs/performance.md](docs/performance.md).
 
 ## Code and integration
 
