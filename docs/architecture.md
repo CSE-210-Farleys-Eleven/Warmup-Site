@@ -111,9 +111,10 @@ See [CI](ci.md) for the authoritative commands and branch-rule limitations.
 
 ## Limitations
 
-- Input budgets are 5 MiB/file, 20,000 scanned data records/file, 512 value columns
-  and 250,000 combined value cells. They reduce pressure rather than guarantee
-  performance on every device. The parser still builds cleaned rows in memory.
+- Input budgets are 5 MiB/file, 20,000 data records/file (blank lines don't count),
+  512 value columns and 250,000 combined value cells. They reduce pressure rather
+  than guarantee performance on every device. The parser still builds cleaned rows
+  in memory.
 - A drawing sample is not the complete distribution. Pagination does not bound
   complete model/table memory or the total size of a CSV download.
 - The six-character data fingerprint can collide; it is not a security primitive.
